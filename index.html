@@ -1,90 +1,668 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Calculator</title>
-    <style>
-        body {
-            background: #111;
-            color: white;
-            font-family: Arial;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CODEFORGE ACADEMY</title>
 
-        .calculator {
-            background: #222;
-            padding: 25px;
-            border-radius: 15px;
-            width: 250px;
-        }
+<style>
+* { box-sizing: border-box; }
 
-        input {
-            width: 95%;
-            height: 45px;
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
+body {
+    margin: 0;
+    background: #090b10;
+    color: #f4f4f5;
+    font-family: Inter, Arial, sans-serif;
+}
 
-        button {
-            width: 55px;
-            height: 50px;
-            margin: 3px;
-            font-size: 18px;
-            cursor: pointer;
-        }
-    </style>
+header {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6%;
+    border-bottom: 1px solid #242731;
+    background: #0d1017;
+}
+
+.logo {
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.logo span { color: #8b75ff; }
+
+header small { color: #999; }
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 35px 25px;
+}
+
+.hero {
+    padding: 40px;
+    border: 1px solid #29283e;
+    border-radius: 18px;
+    background: linear-gradient(120deg, #17152b, #10131e);
+    margin-bottom: 35px;
+}
+
+.hero h1 {
+    font-size: clamp(30px, 5vw, 48px);
+    margin: 0 0 12px;
+}
+
+.hero h1 span { color: #9985ff; }
+
+.hero p { color: #aaa; }
+
+.tag {
+    color: #a99aff;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.section-title {
+    font-size: 23px;
+    margin: 35px 0 18px;
+}
+
+.courses {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 15px;
+}
+
+.course {
+    background: #141720;
+    border: 1px solid #292e3a;
+    border-radius: 13px;
+    padding: 22px;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.course:hover {
+    border-color: #8873ff;
+    transform: translateY(-3px);
+}
+
+.course-icon {
+    font-size: 30px;
+    margin-bottom: 15px;
+}
+
+.course h3 { margin: 5px 0; }
+
+.course p {
+    color: #9298a7;
+    font-size: 13px;
+}
+
+.progress-bg {
+    background: #292e3a;
+    height: 6px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.progress-fill {
+    background: #927cff;
+    height: 100%;
+    width: 0%;
+}
+
+.workspace {
+    display: grid;
+    grid-template-columns: 270px 1fr;
+    gap: 18px;
+    margin-top: 35px;
+}
+
+.sidebar, .lesson, .editor-panel {
+    background: #131720;
+    border: 1px solid #292e3a;
+    border-radius: 13px;
+}
+
+.sidebar { padding: 18px; }
+
+.sidebar h3 { margin-top: 0; }
+
+.lesson-item {
+    padding: 12px;
+    border-radius: 8px;
+    color: #aeb3c0;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 5px 0;
+}
+
+.lesson-item:hover, .lesson-item.active {
+    background: #27233e;
+    color: white;
+}
+
+.lesson {
+    padding: 25px;
+    min-width: 0;
+}
+
+.lesson h2 { margin-top: 10px; }
+
+.lesson p {
+    color: #aeb3c0;
+    line-height: 1.7;
+}
+
+.example {
+    background: #090d14;
+    border: 1px solid #303747;
+    padding: 16px;
+    border-radius: 9px;
+    white-space: pre-wrap;
+    color: #b4a5ff;
+    font-family: monospace;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.editor-panel {
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.editor-header {
+    padding: 13px 16px;
+    background: #1b202c;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.editor-header span {
+    font-size: 13px;
+    color: #b9becb;
+}
+
+textarea {
+    width: 100%;
+    min-height: 230px;
+    resize: vertical;
+    background: #090d14;
+    color: #d9d4ff;
+    border: none;
+    outline: none;
+    padding: 18px;
+    font-family: Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    tab-size: 4;
+}
+
+.actions {
+    display: flex;
+    gap: 9px;
+    padding: 12px;
+    flex-wrap: wrap;
+}
+
+button {
+    background: #8170ef;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 11px 17px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover { background: #9b8cff; }
+
+button.secondary {
+    background: #292e3a;
+}
+
+.output {
+    background: #080b10;
+    padding: 15px;
+    border-top: 1px solid #292e3a;
+}
+
+.output-title {
+    color: #9da5b5;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+#preview {
+    width: 100%;
+    height: 220px;
+    background: white;
+    border: 0;
+    border-radius: 5px;
+}
+
+#message {
+    color: #b7aaff;
+    font-size: 13px;
+    padding: 0 15px 14px;
+}
+
+.hidden { display: none; }
+
+footer {
+    text-align: center;
+    padding: 35px;
+    color: #666;
+    font-size: 13px;
+}
+
+@media(max-width:750px) {
+    .workspace { grid-template-columns: 1fr; }
+    .hero { padding: 25px; }
+}
+</style>
 </head>
 
 <body>
 
-<div class="calculator">
-    <h2>Calculator</h2>
+<header>
+    <div class="logo">CODEFORGE<span>.</span></div>
+    <small>ACADEMY / LEARN TO CODE</small>
+</header>
 
-    <input id="screen" readonly>
+<div class="container">
 
-    <div id="buttons"></div>
+<section class="hero">
+    <div class="tag">YOUR PROGRAMMING JOURNEY STARTS HERE</div>
+    <h1>Learn to <span>Build.</span></h1>
+    <p>Learn programming from zero. Practice, experiment and build real projects.</p>
+    <button onclick="document.getElementById('courses').scrollIntoView({behavior:'smooth'})">
+        Explore courses →
+    </button>
+</section>
+
+<h2 class="section-title" id="courses">Programming courses</h2>
+
+<div class="courses" id="courseCards"></div>
+
+<div class="workspace" id="workspace">
+
+    <aside class="sidebar">
+        <h3 id="sidebarTitle">Your lessons</h3>
+        <div id="lessonList"></div>
+    </aside>
+
+    <main class="lesson">
+        <div class="tag" id="lessonTag">LESSON 01</div>
+        <h2 id="lessonTitle">Welcome to coding</h2>
+
+        <div id="lessonDescription"></div>
+
+        <h3>Example</h3>
+        <div class="example" id="lessonExample"></div>
+
+        <h3>Your practice challenge</h3>
+        <p id="challenge"></p>
+
+        <div class="editor-panel">
+            <div class="editor-header">
+                <span id="editorLanguage">CODE EDITOR</span>
+                <span>● Ready</span>
+            </div>
+
+            <textarea id="code" spellcheck="false"></textarea>
+
+            <div class="actions">
+                <button onclick="runCode()">▶ Run code</button>
+                <button class="secondary" onclick="checkCode()">✓ Check answer</button>
+                <button class="secondary" onclick="resetCode()">Reset</button>
+            </div>
+
+            <div class="output">
+                <div class="output-title">OUTPUT / LIVE PREVIEW</div>
+                <iframe id="preview" sandbox="allow-scripts"></iframe>
+                <div id="message">Ready when you are.</div>
+            </div>
+        </div>
+
+    </main>
 </div>
 
+</div>
+
+<footer>
+    CODEFORGE ACADEMY © 2026 — Learn something new every day.
+</footer>
+
 <script>
-const screen = document.getElementById("screen");
-
-const numbers = [
-    "7", "8", "9", "/",
-    "4", "5", "6", "*",
-    "1", "2", "3", "-",
-    "0", "C", "=", "+"
-];
-
-numbers.forEach(number => {
-    const button = document.createElement("button");
-
-    button.textContent = number;
-
-    button.onclick = function() {
-        if (number === "C") {
-            screen.value = "";
-        } 
-        else if (number === "=") {
-            try {
-                screen.value = Function(
-                    '"use strict"; return (' + screen.value + ')'
-                )();
-            } catch {
-                screen.value = "Error";
+const courses = {
+    html: {
+        name: "HTML",
+        icon: "🌐",
+        description: "Learn how to structure websites.",
+        lessons: [
+            {
+                title: "Introduction to HTML",
+                description: "HTML stands for HyperText Markup Language. It creates the structure of web pages. HTML uses tags to tell browsers what to display.",
+                example: "<h1>Hello World</h1>\n<p>My first website!</p>",
+                challenge: "Write an h1 heading containing the words Hello World.",
+                starter: "<!-- Write your HTML here -->",
+                required: ["<h1", "hello world"]
+            },
+            {
+                title: "Headings and paragraphs",
+                description: "Headings organize your content. HTML has six heading levels, from h1 to h6. Paragraphs use the p tag.",
+                example: "<h1>My Website</h1>\n<h2>About Me</h2>\n<p>I love coding.</p>",
+                challenge: "Create an h2 heading and a paragraph.",
+                starter: "<h2>About Me</h2>\n<p>I love coding.</p>",
+                required: ["<h2", "<p"]
+            },
+            {
+                title: "Links and images",
+                description: "The a tag creates links. The img tag displays images. Links use href and images use src.",
+                example: '<a href="https://example.com">Visit</a>\n<img src="photo.jpg" alt="Photo">',
+                challenge: "Create a link using the a tag and an href attribute.",
+                starter: '<a href="https://example.com">Visit me</a>',
+                required: ["<a", "href"]
             }
-        } 
-        else {
-            screen.value += number;
-        }
-    };
+        ]
+    },
 
-    document.getElementById("buttons").appendChild(button);
+    css: {
+        name: "CSS",
+        icon: "🎨",
+        description: "Design and style beautiful websites.",
+        lessons: [
+            {
+                title: "Introduction to CSS",
+                description: "CSS means Cascading Style Sheets. It controls how HTML elements look, including colors, backgrounds, fonts and spacing.",
+                example: "h1 {\n  color: purple;\n  font-size: 40px;\n}",
+                challenge: "Create a CSS rule that makes h1 text red.",
+                starter: "h1 {\n    color: red;\n}",
+                required: ["h1", "color", "red"]
+            },
+            {
+                title: "Background colors",
+                description: "The background-color property changes an element's background.",
+                example: "body {\n  background-color: black;\n}",
+                challenge: "Give the body a black background.",
+                starter: "body {\n    background-color: black;\n}",
+                required: ["body", "background-color", "black"]
+            },
+            {
+                title: "Spacing",
+                description: "Padding adds space inside an element. Margin adds space outside an element.",
+                example: ".box {\n  padding: 20px;\n  margin: 10px;\n}",
+                challenge: "Create a class called box with padding and margin.",
+                starter: ".box {\n    padding: 20px;\n    margin: 10px;\n}",
+                required: [".box", "padding", "margin"]
+            }
+        ]
+    },
+
+    javascript: {
+        name: "JavaScript",
+        icon: "⚡",
+        description: "Make websites interactive and dynamic.",
+        lessons: [
+            {
+                title: "Introduction to JavaScript",
+                description: "JavaScript is a programming language that makes websites interactive. You can use it to calculate, respond to clicks and build games.",
+                example: 'console.log("Hello World");',
+                challenge: 'Write a console.log statement that prints "Hello World".',
+                starter: 'console.log("Hello World");',
+                required: ["console.log", "hello world"]
+            },
+            {
+                title: "Variables",
+                description: "Variables store information. Use let when a value can change and const when it should stay constant.",
+                example: 'let player = "Alex";\nlet score = 100;',
+                challenge: "Create a variable named score with the value 100.",
+                starter: "let score = 100;",
+                required: ["score", "100"]
+            },
+            {
+                title: "Functions",
+                description: "Functions are reusable blocks of code. You can call a function whenever you need it.",
+                example: 'function sayHello() {\n  console.log("Hello");\n}\n\nsayHello();',
+                challenge: "Create a function named startGame.",
+                starter: "function startGame() {\n    console.log('Game started');\n}",
+                required: ["function", "startgame"]
+            }
+        ]
+    },
+
+    python: {
+        name: "Python",
+        icon: "🐍",
+        description: "Learn programming, automation and more.",
+        lessons: [
+            {
+                title: "Introduction to Python",
+                description: "Python is a beginner-friendly programming language. It is used in automation, data science, web development and artificial intelligence.",
+                example: 'print("Hello World")',
+                challenge: 'Write a print statement that displays "Hello World".',
+                starter: 'print("Hello World")',
+                required: ["print", "hello world"]
+            },
+            {
+                title: "Python variables",
+                description: "Variables store data. Python automatically determines the data type.",
+                example: 'name = "Alex"\nage = 15\nprint(name)',
+                challenge: "Create a variable called score and give it the value 100.",
+                starter: "score = 100",
+                required: ["score", "100"]
+            },
+            {
+                title: "Python conditions",
+                description: "If statements let your program make decisions based on conditions.",
+                example: 'score = 100\n\nif score >= 50:\n    print("You passed!")',
+                challenge: "Write an if statement that checks whether score is greater than 10.",
+                starter: "score = 20\n\nif score > 10:\n    print('High score!')",
+                required: ["if", "score", "10"]
+            }
+        ]
+    }
+};
+
+let currentCourse = "html";
+let currentLesson = 0;
+
+let completed = JSON.parse(localStorage.getItem("codeforge-progress") || "{}");
+
+function saveProgress() {
+    localStorage.setItem("codeforge-progress", JSON.stringify(completed));
+}
+
+function renderCourses() {
+    const container = document.getElementById("courseCards");
+
+    container.innerHTML = Object.entries(courses).map(([key, course]) => {
+        const done = completed[key] || [];
+        const percent = Math.round(done.length / course.lessons.length * 100);
+
+        return `
+        <div class="course" onclick="selectCourse('${key}')">
+            <div class="course-icon">${course.icon}</div>
+            <h3>${course.name}</h3>
+            <p>${course.description}</p>
+            <div class="progress-bg">
+                <div class="progress-fill" style="width:${percent}%"></div>
+            </div>
+            <p>${done.length}/${course.lessons.length} lessons completed</p>
+        </div>`;
+    }).join("");
+}
+
+function selectCourse(key) {
+    currentCourse = key;
+    currentLesson = 0;
+
+    document.getElementById("workspace").scrollIntoView({
+        behavior: "smooth"
+    });
+
+    renderLessons();
+    renderLesson();
+}
+
+function renderLessons() {
+    const course = courses[currentCourse];
+
+    document.getElementById("sidebarTitle").textContent = course.name + " Lessons";
+
+    document.getElementById("lessonList").innerHTML =
+        course.lessons.map((lesson, index) => `
+            <div class="lesson-item ${index === currentLesson ? "active" : ""}"
+                 onclick="selectLesson(${index})">
+                ${completed[currentCourse]?.includes(index) ? "✓ " : ""}
+                ${index + 1}. ${lesson.title}
+            </div>
+        `).join("");
+}
+
+function selectLesson(index) {
+    currentLesson = index;
+    renderLessons();
+    renderLesson();
+}
+
+function renderLesson() {
+    const lesson = courses[currentCourse].lessons[currentLesson];
+
+    document.getElementById("lessonTag").textContent =
+        "LESSON " + String(currentLesson + 1).padStart(2, "0");
+
+    document.getElementById("lessonTitle").textContent = lesson.title;
+    document.getElementById("lessonDescription").textContent = lesson.description;
+    document.getElementById("lessonExample").textContent = lesson.example;
+    document.getElementById("challenge").textContent = lesson.challenge;
+    document.getElementById("editorLanguage").textContent =
+        courses[currentCourse].name + " EDITOR";
+
+    document.getElementById("code").value = lesson.starter;
+    document.getElementById("message").textContent = "Ready when you are.";
+
+    document.getElementById("preview").srcdoc =
+        "<body style='font-family:Arial;padding:20px'>Your preview will appear here.</body>";
+}
+
+function resetCode() {
+    document.getElementById("code").value =
+        courses[currentCourse].lessons[currentLesson].starter;
+
+    document.getElementById("message").textContent = "Code reset.";
+}
+
+function runCode() {
+    const code = document.getElementById("code").value;
+    const preview = document.getElementById("preview");
+    const message = document.getElementById("message");
+
+    if (currentCourse === "html") {
+        preview.srcdoc = code;
+        message.textContent = "HTML preview updated.";
+    }
+
+    else if (currentCourse === "css") {
+        preview.srcdoc = `
+            <style>${code}</style>
+            <h1>CSS Preview</h1>
+            <p>Edit your CSS to change this page.</p>
+            <div class="box">Test element</div>
+        `;
+        message.textContent = "CSS preview updated.";
+    }
+
+    else if (currentCourse === "javascript") {
+        preview.srcdoc = `
+            <body style="font-family:Arial;padding:15px">
+            <h3>JavaScript output</h3>
+            <pre id="result"></pre>
+            <script>
+            const oldLog = console.log;
+            console.log = (...args) => {
+                document.getElementById("result").textContent +=
+                    args.join(" ") + "\\n";
+            };
+            try {
+                ${code}
+            } catch(error) {
+                document.getElementById("result").textContent =
+                    "Error: " + error.message;
+            }
+            <\/script>
+            </body>
+        `;
+        message.textContent = "JavaScript executed in the preview.";
+    }
+
+    else {
+        message.textContent =
+            "Python execution needs a Python runtime. Your code is saved in the editor, but this browser-only version cannot run it yet.";
+        preview.srcdoc =
+            "<body style='font-family:Arial;padding:20px'>Python practice editor. Add a Python runtime to execute code.</body>";
+    }
+}
+
+function checkCode() {
+    const lesson = courses[currentCourse].lessons[currentLesson];
+    const code = document.getElementById("code").value.toLowerCase();
+
+    const passed = lesson.required.every(item =>
+        code.includes(item.toLowerCase())
+    );
+
+    const message = document.getElementById("message");
+
+    if (passed) {
+        if (!completed[currentCourse]) completed[currentCourse] = [];
+
+        if (!completed[currentCourse].includes(currentLesson)) {
+            completed[currentCourse].push(currentLesson);
+        }
+
+        saveProgress();
+        renderLessons();
+        renderCourses();
+
+        message.textContent = "✓ Great job! Challenge completed. You earned a lesson!";
+        message.style.color = "#7ee6a0";
+    } else {
+        message.textContent =
+            "Not quite yet! Review the lesson and try again.";
+        message.style.color = "#ff9b9b";
+    }
+}
+
+// Tab key inserts indentation in the editor.
+document.getElementById("code").addEventListener("keydown", function(event) {
+    if (event.key === "Tab") {
+        event.preventDefault();
+
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
+
+        this.value =
+            this.value.substring(0, start) +
+            "    " +
+            this.value.substring(end);
+
+        this.selectionStart = this.selectionEnd = start + 4;
+    }
 });
+
+renderCourses();
+selectCourse("html");
 </script>
 
 </body>
 </html>
-
