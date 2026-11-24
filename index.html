@@ -3,166 +3,143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Find the Gem</title>
+<title>Smooth 3D Cow</title>
 <style>
-  * { box-sizing: border-box; }
-
   body {
     margin: 0;
     min-height: 100vh;
     display: grid;
     place-items: center;
-    align-content: center;
-    gap: 1.5rem;
-    background: radial-gradient(circle at 50% 30%, #2b1d4f, #0d0a1f 70%);
-    color: #f5f0ff;
-    font-family: system-ui, sans-serif;
-    text-align: center;
+    background: radial-gradient(circle at 50% 40%, #2a3b5c, #0b0f1e 75%);
+    overflow: hidden;
   }
 
-  h1 {
-    margin: 0;
-    font-size: clamp(1.5rem, 4vw, 2.5rem);
-    letter-spacing: .15em;
-    text-transform: uppercase;
-    text-shadow: 0 0 20px #b68cff;
-  }
+  .stage { perspective: 1100px; }
 
-  .status { min-height: 2.5rem; font-size: 1.2rem; }
-  .status.win  { color: #ffe066; text-shadow: 0 0 12px #ffe066; }
-  .status.lose { color: #bbb; }
-
-  .board {
-    display: grid;
-    grid-template-columns: repeat(3, 110px);
-    gap: 20px;
-    perspective: 900px;
-    transform: rotateX(25deg);
-  }
-
-  .card {
-    width: 110px;
-    height: 140px;
-    cursor: pointer;
-    transform-style: preserve-3d;
-    transition: transform .2s;
-  }
-  .card:not(.flipped):hover { transform: translateZ(14px); }
-
-  .inner {
+  .cow {
     position: relative;
-    width: 100%;
-    height: 100%;
+    width: 0; height: 0;
     transform-style: preserve-3d;
-    transition: transform .7s cubic-bezier(.3, 1.4, .5, 1);
+    transform: rotateX(-10deg) scale(.9);
+    animation: spin 14s linear infinite;
   }
-  .card.flipped .inner { transform: rotateY(180deg); }
+  @keyframes spin {
+    from { transform: rotateX(-10deg) scale(.9) rotateY(0deg); }
+    to   { transform: rotateX(-10deg) scale(.9) rotateY(360deg); }
+  }
 
-  .face {
+  /* Each part is a 3D container placed at its center. Its slices are added by JS. */
+  .part {
     position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    border-radius: 12px;
-    border: 2px solid rgba(255,255,255,.15);
-    box-shadow: 0 12px 30px rgba(0,0,0,.5);
-    backface-visibility: hidden;
-    font-size: 2rem;
-    font-weight: bold;
-  }
-  .front {
-    background: linear-gradient(145deg, #5b3fa0, #2e1c5e);
-    color: #d9c7ff;
-  }
-  .back {
-    background: linear-gradient(145deg, #1f3b4d, #0e1d27);
-    color: #8a8a9a;
-    font-size: .9rem;
-    transform: rotateY(180deg);
-  }
-  .card.gem .back {
-    background: linear-gradient(145deg, #ffe066, #ff9f1c);
-    color: #3a1f00;
-    font-size: 3rem;
-    box-shadow: 0 0 40px #ffe066;
+    left: 0; top: 0;
+    transform-style: preserve-3d;
   }
 
-  button {
-    padding: .7rem 1.8rem;
-    border: 0;
-    border-radius: 999px;
-    background: linear-gradient(145deg, #5b3fa0, #2e1c5e);
-    color: #f5f0ff;
-    font-size: 1rem;
-    cursor: pointer;
-    box-shadow: 0 8px 20px rgba(0,0,0,.4);
+  /* A flat, round slice. JS sets its size and transform. */
+  .slice {
+    position: absolute;
+    left: 50%; top: 50%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%,
+      color-mix(in srgb, var(--c) 70%, white),
+      var(--c) 55%,
+      color-mix(in srgb, var(--c) 60%, black));
   }
-  button:hover { transform: translateY(-2px); }
-
-  .footer { font-size: .85rem; opacity: .6; }
 </style>
 </head>
 <body>
-
-<h1>Find the Gem</h1>
-<p class="status" id="status">Pick a card.</p>
-<main class="board" id="board"></main>
-<button id="reset">New game</button>
-<p class="footer">Attempts: <span id="attempts">0</span></p>
+<div class="stage">
+  <div class="cow" id="cow"></div>
+</div>
 
 <script>
-  const board = document.getElementById("board");
-  const statusEl = document.getElementById("status");
-  const attemptsEl = document.getElementById("attempts");
-  const resetBtn = document.getElementById("reset");
+  // Each part: center [x, y, z], radii [rx, ry, rz], color
+  const parts = [
+    // Body
+    { p: [0, 0, 0],        r: [115, 62, 58], c: "#f5f2ec" },
 
-  const SIZE = 9;
-  let gemIndex, attempts, over, cards;
+    // Spots (flat patches sitting on the surface)
+    { p: [-40, -18, 50],   r: [30, 24, 2],   c: "#1c1c1c" },
+    { p: [55, 5, -50],     r: [26, 28, 2],   c: "#1c1c1c" },
+    { p: [-5, -45, 30],    r: [22, 12, 2],   c: "#1c1c1c" },
 
-  function newGame() {
-    gemIndex = Math.floor(Math.random() * SIZE);
-    attempts = 0;
-    over = false;
-    attemptsEl.textContent = "0";
-    statusEl.textContent = "Pick a card.";
-    statusEl.className = "status";
+    // Head and snout
+    { p: [-150, -28, 0],   r: [52, 46, 44],  c: "#f5f2ec" },
+    { p: [-198, 8, 0],     r: [30, 26, 32],  c: "#f2b8b5" },
+    { p: [-222, 6, -11],   r: [5, 4, 4],     c: "#7a4a4a" },
+    { p: [-222, 6, 11],    r: [5, 4, 4],     c: "#7a4a4a" },
 
-    board.innerHTML = "";
-    cards = [];
+    // Eyes
+    { p: [-185, -40, -30], r: [7, 7, 7],     c: "#111" },
+    { p: [-185, -40, 30],  r: [7, 7, 7],     c: "#111" },
 
-    for (let i = 0; i < SIZE; i++) {
-      const card = document.createElement("div");
-      card.className = "card" + (i === gemIndex ? " gem" : "");
-      card.innerHTML = `
-        <div class="inner">
-          <div class="face front">?</div>
-          <div class="face back">${i === gemIndex ? "💎" : "Empty"}</div>
-        </div>`;
-      card.addEventListener("click", () => pick(i));
-      board.appendChild(card);
-      cards.push(card);
+    // Horns
+    { p: [-140, -78, -24], r: [6, 22, 6],    c: "#efe3c2" },
+    { p: [-140, -78, 24],  r: [6, 22, 6],    c: "#efe3c2" },
+
+    // Ears
+    { p: [-128, -35, -58], r: [30, 13, 9],   c: "#f2b8b5" },
+    { p: [-128, -35, 58],  r: [30, 13, 9],   c: "#f2b8b5" },
+
+    // Legs and hooves
+    { p: [-62, 118, -36],  r: [15, 58, 15],  c: "#f5f2ec" },
+    { p: [-62, 118, 36],   r: [15, 58, 15],  c: "#f5f2ec" },
+    { p: [62, 118, -36],   r: [15, 58, 15],  c: "#f5f2ec" },
+    { p: [62, 118, 36],    r: [15, 58, 15],  c: "#f5f2ec" },
+    { p: [-62, 170, -36],  r: [16, 9, 16],   c: "#2a2a2a" },
+    { p: [-62, 170, 36],   r: [16, 9, 16],   c: "#2a2a2a" },
+    { p: [62, 170, -36],   r: [16, 9, 16],   c: "#2a2a2a" },
+    { p: [62, 170, 36],    r: [16, 9, 16],   c: "#2a2a2a" },
+
+    // Udder
+    { p: [12, 72, 0],      r: [26, 18, 22],  c: "#f2b8b5" },
+
+    // Tail and tuft
+    { p: [122, 22, 0],     r: [5, 55, 5],    c: "#f5f2ec" },
+    { p: [122, 78, 0],     r: [12, 12, 12],  c: "#1c1c1c" },
+  ];
+
+  const cow = document.getElementById("cow");
+  const STEPS = 13;                 // slices per axis (more = smoother)
+
+  function makeEllipsoid({ p, r, c }) {
+    const [cx, cy, cz] = p;
+    const [rx, ry, rz] = r;
+
+    const part = document.createElement("div");
+    part.className = "part";
+    part.style.transform = `translate3d(${cx}px, ${cy}px, ${cz}px)`;
+
+    // Stack slices along three axes so the shape looks round from any side
+    for (let k = 0; k < STEPS; k++) {
+      const t = -0.9 + (1.8 * k) / (STEPS - 1);   // from -0.9 to 0.9
+      const s = Math.sqrt(1 - t * t);             // radius shrinks toward the ends
+
+      const sets = [
+        // Along Z: disc lies in the XY plane
+        { w: 2 * rx * s, h: 2 * ry * s, tf: `translateZ(${t * rz}px)` },
+        // Along X: disc lies in the YZ plane
+        { w: 2 * rz * s, h: 2 * ry * s, tf: `translateX(${t * rx}px) rotateY(90deg)` },
+        // Along Y: disc lies in the XZ plane
+        { w: 2 * rx * s, h: 2 * rz * s, tf: `translateY(${t * ry}px) rotateX(90deg)` },
+      ];
+
+      for (const set of sets) {
+        const d = document.createElement("div");
+        d.className = "slice";
+        d.style.setProperty("--c", c);
+        d.style.width = `${set.w}px`;
+        d.style.height = `${set.h}px`;
+        d.style.marginLeft = `${-set.w / 2}px`;
+        d.style.marginTop = `${-set.h / 2}px`;
+        d.style.transform = set.tf;
+        part.appendChild(d);
+      }
     }
+    return part;
   }
 
-  function pick(i) {
-    if (over || cards[i].classList.contains("flipped")) return;
-
-    cards[i].classList.add("flipped");
-    attempts++;
-    attemptsEl.textContent = attempts;
-
-    if (i === gemIndex) {
-      over = true;
-      statusEl.textContent = `💎 You found the gem in ${attempts} ${attempts === 1 ? "try" : "tries"}!`;
-      statusEl.className = "status win";
-    } else {
-      statusEl.textContent = "Nope, keep looking…";
-      statusEl.className = "status lose";
-    }
-  }
-
-  resetBtn.addEventListener("click", newGame);
-  newGame();
+  parts.forEach(pt => cow.appendChild(makeEllipsoid(pt)));
 </script>
 </body>
 </html>
