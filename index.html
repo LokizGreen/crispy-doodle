@@ -3,18 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Grassy Field (CSS 3D)</title>
+<title>Endless Grass (CSS 3D)</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; }
+
   body {
-    background: radial-gradient(ellipse at 50% 40%, #4d4d4d, #2c2c2c 85%);
+    --horizon: 50%;
+    background: linear-gradient(to bottom,
+      #3b434e 0%,
+      #262c35 calc(var(--horizon) - 2px),
+      #1c2b11 calc(var(--horizon) + 2px),
+      #0a1406 100%);
+    font-family: system-ui, sans-serif;
   }
 
   .stage {
     position: fixed;
     inset: 0;
-    perspective: 1000px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
   }
+  .stage.dragging { cursor: grabbing; }
 
   .world {
     position: absolute;
@@ -23,36 +33,8 @@
     width: 0;
     height: 0;
     transform-style: preserve-3d;
-    scale: var(--s, 1);
-    animation: pan 24s ease-in-out infinite alternate;
-  }
-  @keyframes pan {
-    from { transform: rotateY(-20deg); }
-    to   { transform: rotateY(20deg); }
   }
 
-  .field {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 0;
-    height: 0;
-    transform-style: preserve-3d;
-    transform: rotateX(-58deg);
-  }
-
-  /* Flat dark ground lying in the XZ plane */
-  .ground {
-    position: absolute;
-    left: -500px;
-    top: -400px;
-    width: 1000px;
-    height: 800px;
-    background: linear-gradient(#0c1808, #15300d);
-    transform: rotateX(90deg);
-  }
-
-  /* One grass blade: a tapered shape that stands on the ground and sways */
   .blade {
     position: absolute;
     transform-origin: 50% 100%;
@@ -60,73 +42,193 @@
     animation: sway 3.2s ease-in-out infinite alternate;
   }
   @keyframes sway {
-    from {
-      transform: translate3d(var(--x), 0, var(--z))
-                 rotateY(var(--ry))
-                 rotateX(calc(var(--lean) - 6deg));
-    }
-    to {
-      transform: translate3d(var(--x), 0, var(--z))
-                 rotateY(var(--ry))
-                 rotateX(calc(var(--lean) + 8deg));
-    }
+    from { transform: rotateY(var(--ry)) rotateX(calc(var(--lean) - 6deg)); }
+    to   { transform: rotateY(var(--ry)) rotateX(calc(var(--lean) + 8deg)); }
+  }
+
+  .hud {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: 13px;
+    color: #e8f5e0;
+    opacity: .75;
+    text-shadow: 0 1px 4px #000;
+    white-space: nowrap;
+    pointer-events: none;
   }
 </style>
 </head>
 <body>
-<div class="stage">
-  <div class="world">
-    <div class="field" id="field">
-      <div class="ground"></div>
-    </div>
-  </div>
+<div class="stage" id="stage">
+  <div class="world" id="world"></div>
 </div>
+<p class="hud">WASD or arrow keys to walk · drag to look</p>
 
 <script>
-  const field = document.getElementById("field");
-  const world = document.querySelector(".world");
+  const stage = document.getElementById("stage");
+  const world = document.getElementById("world");
 
-  const W = 1000;      // field width (px)
-  const D = 800;       // field depth (px)
-  const COUNT = 1800;  // number of blades (more = thicker, but heavier)
+  const W = 2000;          // the grass tile repeats every W px in both directions
+  const HALF = W / 2;
+  const COUNT = 6000;      // blades per tile
+  const EYE = 95;          // eye height above the ground
+  const NEAR = 15;         // hide blades closer than this behind you
+  const FAR = 300;         // draw distance
+  const WALK = 240;        // px per second
+  const TURN = 120;        // degrees per second
 
+  const player = { x: 0, z: 0, yaw: 0, pitch: -6, bob: 0 };
+  const keys = {};
+  let P = 1000;            // perspective distance, set from window width
+
+  const rad = d => d * Math.PI / 180;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const rand = (a, b) => a + Math.random() * (b - a);
+
+  // Build one tile of blades
+  const blades = [];
   const frag = document.createDocumentFragment();
 
   for (let i = 0; i < COUNT; i++) {
-    const x = rand(-W / 2, W / 2);
-    const z = rand(-D / 2, D / 2);
-    const h = rand(70, 160);            // blade height
-    const w = rand(5, 9);               // blade width at the base
-    const lean = rand(-30, 30);         // resting tilt
-    const ry = rand(0, 180);            // turn around the vertical axis
+    const x = rand(-HALF, HALF);
+    const z = rand(-HALF, HALF);
+    const h = rand(70, 160);
+    const w = rand(5, 9);
+    const lean = rand(-30, 30);
+    const ry = rand(0, 180);
     const hue = rand(98, 122);
-    const depth = (z + D / 2) / D;      // 0 = far edge, 1 = near edge
-    const k = (0.7 + 0.3 * depth) * rand(0.92, 1.08);  // far blades darker
-    const delay = -(x / 260 + rand(0, 0.4));           // wave rolls across the field
+    const k = rand(0.8, 1.05);                  // shade variation
+    const delay = -(x / 260 + rand(0, 0.4));    // wave rolls across the field
 
-    // Dark roots at the base, bright tips at the top
     const bg = `linear-gradient(to top, hsl(${hue}, 60%, ${(9 * k).toFixed(1)}%) 0%, hsl(${hue}, 65%, ${(26 * k).toFixed(1)}%) 45%, hsl(${hue}, 75%, ${(44 * k).toFixed(1)}%) 85%, hsl(${hue + 4}, 80%, ${(56 * k).toFixed(1)}%) 100%)`;
 
-    const b = document.createElement("div");
-    b.className = "blade";
-    b.style.cssText =
+    const el = document.createElement("div");
+    el.className = "blade";
+    el.style.cssText =
       `left:${(-w / 2).toFixed(1)}px;top:${(-h + 4).toFixed(1)}px;` +
       `width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;` +
-      `--x:${x.toFixed(1)}px;--z:${z.toFixed(1)}px;` +
       `--ry:${ry.toFixed(1)}deg;--lean:${lean.toFixed(1)}deg;` +
       `background:${bg};animation-delay:${delay.toFixed(2)}s`;
-    frag.appendChild(b);
+    frag.appendChild(el);
+    blades.push({ el, x, z, nx: NaN, nz: NaN, shown: null });
   }
-  field.appendChild(frag);
+  world.appendChild(frag);
 
-  // Scale the field to fit the window
-  function fit() {
-    const s = Math.min(innerWidth / 1100, innerHeight / 820);
-    world.style.setProperty("--s", Math.min(s, 1.5).toFixed(3));
+  // Keyboard
+  const norm = k => (k.length === 1 ? k.toLowerCase() : k);
+  addEventListener("keydown", e => {
+    keys[norm(e.key)] = true;
+    if (e.key.startsWith("Arrow")) e.preventDefault();
+  });
+  addEventListener("keyup", e => { keys[norm(e.key)] = false; });
+  addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+  // Mouse drag to look
+  let drag = null;
+  stage.addEventListener("pointerdown", e => {
+    drag = { x: e.clientX, y: e.clientY };
+    stage.classList.add("dragging");
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener("pointermove", e => {
+    if (!drag) return;
+    player.yaw -= (e.clientX - drag.x) * 0.2;
+    player.pitch = clamp(player.pitch + (e.clientY - drag.y) * 0.15, -45, 20);
+    drag = { x: e.clientX, y: e.clientY };
+  });
+  const endDrag = () => { drag = null; stage.classList.remove("dragging"); };
+  stage.addEventListener("pointerup", endDrag);
+  stage.addEventListener("pointercancel", endDrag);
+
+  // Each blade is drawn in whichever copy of the tile is closest to the player
+  function place(b) {
+    const nx = Math.round((player.x - b.x) / W);
+    const nz = Math.round((player.z - b.z) / W);
+    if (nx !== b.nx || nz !== b.nz) {
+      b.nx = nx;
+      b.nz = nz;
+      b.el.style.translate =
+        `${(b.x + nx * W).toFixed(1)}px 0px ${(b.z + nz * W).toFixed(1)}px`;
+    }
+    return [b.x + nx * W, b.z + nz * W];
   }
+
+  function step(dt) {
+    if (keys.ArrowLeft) player.yaw -= TURN * dt;
+    if (keys.ArrowRight) player.yaw += TURN * dt;
+
+    // Forward and right directions on the ground plane
+    const yr = rad(player.yaw);
+    const fx = Math.sin(yr), fz = -Math.cos(yr);
+    const rx = Math.cos(yr), rz = Math.sin(yr);
+
+    let mx = 0, mz = 0;
+    if (keys.w || keys.ArrowUp)   { mx += fx; mz += fz; }
+    if (keys.s || keys.ArrowDown) { mx -= fx; mz -= fz; }
+    if (keys.d)                   { mx += rx; mz += rz; }
+    if (keys.a)                   { mx -= rx; mz -= rz; }
+
+    const len = Math.hypot(mx, mz);
+    const moving = len > 0;
+    if (moving) {
+      player.x += (mx / len) * WALK * dt;
+      player.z += (mz / len) * WALK * dt;
+      player.bob += dt * 9;
+    }
+    const bob = moving ? Math.sin(player.bob) * 2.5 : 0;
+
+    // Camera: rotate the world around you, then shift it so you stand at the origin
+    world.style.transform =
+      `rotateX(${player.pitch}deg) rotateY(${player.yaw}deg) ` +
+      `translate3d(${(-player.x).toFixed(1)}px, ${(EYE + bob).toFixed(1)}px, ${(-player.z).toFixed(1)}px)`;
+
+    // Show only blades in front of you, inside the view and within draw distance
+    const half = innerWidth / 2;
+    for (const b of blades) {
+      const [bx, bz] = place(b);
+      const dx = bx - player.x;
+      const dz = bz - player.z;
+      const depth = dx * fx + dz * fz;
+      const side = dx * rx + dz * rz;
+      const show = depth > NEAR && depth < FAR &&
+                   Math.abs(side) < half * (1 + depth / P) + 40;
+      if (show !== b.shown) {
+        b.el.style.visibility = show ? "visible" : "hidden";
+        b.shown = show;
+      }
+    }
+  }
+
+  // Keep the horizon in the right place as you look up and down
+  let lastHorizon = "";
+  function setHorizon() {
+    const y = (innerHeight / 2 + P * Math.tan(rad(player.pitch))).toFixed(1) + "px";
+    if (y !== lastHorizon) {
+      document.body.style.setProperty("--horizon", y);
+      lastHorizon = y;
+    }
+  }
+
+  function fit() {
+    P = clamp(innerWidth * 0.75, 350, 1400);
+    stage.style.perspective = P + "px";
+    setHorizon();
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    step(Math.min(0.05, (now - last) / 1000));
+    last = now;
+    setHorizon();
+    requestAnimationFrame(frame);
+  }
+
   fit();
   addEventListener("resize", fit);
+  requestAnimationFrame(frame);
 </script>
 </body>
 </html>
