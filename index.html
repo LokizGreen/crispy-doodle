@@ -3,47 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smooth 3D Cow</title>
+<title>Holstein Cow (CSS 3D)</title>
 <style>
   body {
     margin: 0;
     min-height: 100vh;
     display: grid;
     place-items: center;
-    background: radial-gradient(circle at 50% 40%, #2a3b5c, #0b0f1e 75%);
+    background: radial-gradient(circle at 50% 40%, #cfe0f0, #7d98b8 80%);
     overflow: hidden;
   }
 
   .stage { perspective: 1100px; }
+  @media (max-width: 600px) { .stage { transform: scale(.6); } }
 
   .cow {
     position: relative;
     width: 0; height: 0;
     transform-style: preserve-3d;
-    transform: rotateX(-10deg) scale(.9);
-    animation: spin 14s linear infinite;
+    animation: spin 16s linear infinite;
   }
   @keyframes spin {
-    from { transform: rotateX(-10deg) scale(.9) rotateY(0deg); }
-    to   { transform: rotateX(-10deg) scale(.9) rotateY(360deg); }
+    from { transform: rotateX(-12deg) rotateY(0deg); }
+    to   { transform: rotateX(-12deg) rotateY(360deg); }
   }
 
-  /* Each part is a 3D container placed at its center. Its slices are added by JS. */
-  .part {
+  /* Each tile is one flat, shaded facet of a body part */
+  .t {
     position: absolute;
     left: 0; top: 0;
-    transform-style: preserve-3d;
-  }
-
-  /* A flat, round slice. JS sets its size and transform. */
-  .slice {
-    position: absolute;
-    left: 50%; top: 50%;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%,
-      color-mix(in srgb, var(--c) 70%, white),
-      var(--c) 55%,
-      color-mix(in srgb, var(--c) 60%, black));
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
 </style>
 </head>
@@ -53,93 +43,111 @@
 </div>
 
 <script>
-  // Each part: center [x, y, z], radii [rx, ry, rz], color
-  const parts = [
-    // Body
-    { p: [0, 0, 0],        r: [115, 62, 58], c: "#f5f2ec" },
-
-    // Spots (flat patches sitting on the surface)
-    { p: [-40, -18, 50],   r: [30, 24, 2],   c: "#1c1c1c" },
-    { p: [55, 5, -50],     r: [26, 28, 2],   c: "#1c1c1c" },
-    { p: [-5, -45, 30],    r: [22, 12, 2],   c: "#1c1c1c" },
-
-    // Head and snout
-    { p: [-150, -28, 0],   r: [52, 46, 44],  c: "#f5f2ec" },
-    { p: [-198, 8, 0],     r: [30, 26, 32],  c: "#f2b8b5" },
-    { p: [-222, 6, -11],   r: [5, 4, 4],     c: "#7a4a4a" },
-    { p: [-222, 6, 11],    r: [5, 4, 4],     c: "#7a4a4a" },
-
-    // Eyes
-    { p: [-185, -40, -30], r: [7, 7, 7],     c: "#111" },
-    { p: [-185, -40, 30],  r: [7, 7, 7],     c: "#111" },
-
-    // Horns
-    { p: [-140, -78, -24], r: [6, 22, 6],    c: "#efe3c2" },
-    { p: [-140, -78, 24],  r: [6, 22, 6],    c: "#efe3c2" },
-
-    // Ears
-    { p: [-128, -35, -58], r: [30, 13, 9],   c: "#f2b8b5" },
-    { p: [-128, -35, 58],  r: [30, 13, 9],   c: "#f2b8b5" },
-
-    // Legs and hooves
-    { p: [-62, 118, -36],  r: [15, 58, 15],  c: "#f5f2ec" },
-    { p: [-62, 118, 36],   r: [15, 58, 15],  c: "#f5f2ec" },
-    { p: [62, 118, -36],   r: [15, 58, 15],  c: "#f5f2ec" },
-    { p: [62, 118, 36],    r: [15, 58, 15],  c: "#f5f2ec" },
-    { p: [-62, 170, -36],  r: [16, 9, 16],   c: "#2a2a2a" },
-    { p: [-62, 170, 36],   r: [16, 9, 16],   c: "#2a2a2a" },
-    { p: [62, 170, -36],   r: [16, 9, 16],   c: "#2a2a2a" },
-    { p: [62, 170, 36],    r: [16, 9, 16],   c: "#2a2a2a" },
-
-    // Udder
-    { p: [12, 72, 0],      r: [26, 18, 22],  c: "#f2b8b5" },
-
-    // Tail and tuft
-    { p: [122, 22, 0],     r: [5, 55, 5],    c: "#f5f2ec" },
-    { p: [122, 78, 0],     r: [12, 12, 12],  c: "#1c1c1c" },
-  ];
-
   const cow = document.getElementById("cow");
-  const STEPS = 13;                 // slices per axis (more = smoother)
 
-  function makeEllipsoid({ p, r, c }) {
-    const [cx, cy, cz] = p;
-    const [rx, ry, rz] = r;
+  // Light comes from above and the front-left (CSS y points down)
+  const norm = v => { const l = Math.hypot(...v); return v.map(c => c / l); };
+  const L = norm([-0.5, -0.75, 0.45]);
 
-    const part = document.createElement("div");
-    part.className = "part";
-    part.style.transform = `translate3d(${cx}px, ${cy}px, ${cz}px)`;
+  // Colors
+  const WHITE = [246, 244, 239];
+  const BLACK = [22, 22, 24];
+  const PINK  = [240, 166, 172];
+  const HOOF  = [44, 40, 38];
+  const CREAM = [232, 220, 190];
+  const NOSE_DARK = [95, 52, 58];
 
-    // Stack slices along three axes so the shape looks round from any side
-    for (let k = 0; k < STEPS; k++) {
-      const t = -0.9 + (1.8 * k) / (STEPS - 1);   // from -0.9 to 0.9
-      const s = Math.sqrt(1 - t * t);             // radius shrinks toward the ends
+  const solid = c => () => c;
 
-      const sets = [
-        // Along Z: disc lies in the XY plane
-        { w: 2 * rx * s, h: 2 * ry * s, tf: `translateZ(${t * rz}px)` },
-        // Along X: disc lies in the YZ plane
-        { w: 2 * rz * s, h: 2 * ry * s, tf: `translateX(${t * rx}px) rotateY(90deg)` },
-        // Along Y: disc lies in the XZ plane
-        { w: 2 * rx * s, h: 2 * rz * s, tf: `translateY(${t * ry}px) rotateX(90deg)` },
-      ];
-
-      for (const set of sets) {
-        const d = document.createElement("div");
-        d.className = "slice";
-        d.style.setProperty("--c", c);
-        d.style.width = `${set.w}px`;
-        d.style.height = `${set.h}px`;
-        d.style.marginLeft = `${-set.w / 2}px`;
-        d.style.marginTop = `${-set.h / 2}px`;
-        d.style.transform = set.tf;
-        part.appendChild(d);
-      }
-    }
-    return part;
+  // Holstein-style patches: a smooth pattern in cow space decides black or white
+  function spotted([x, y, z]) {
+    const a = Math.sin(x * 0.022 + z * 0.015 + 0.8) * Math.cos(y * 0.03 - z * 0.02 + 0.4);
+    const b = 0.7 * Math.sin(x * 0.05 - y * 0.025 + 2.1) * Math.cos(z * 0.045 + x * 0.012);
+    return (a + b > 0.28) ? BLACK : WHITE;
   }
 
-  parts.forEach(pt => cow.appendChild(makeEllipsoid(pt)));
+  // Each part is an ellipsoid: center p, radii r, grid detail nu x nv, color function
+  const parts = [
+    // Body and head
+    { p: [0, 0, 0],          r: [115, 62, 58], nu: 16, nv: 24, col: spotted },
+    { p: [-150, -30, 0],     r: [50, 46, 44],  nu: 12, nv: 14, col: spotted },
+
+    // Snout and nostrils
+    { p: [-198, 4, 0],       r: [30, 28, 32],  nu: 8,  nv: 10, col: solid(PINK) },
+    { p: [-222, 6, -12],     r: [5, 5, 5],     nu: 4,  nv: 6,  col: solid(NOSE_DARK) },
+    { p: [-222, 6, 12],      r: [5, 5, 5],     nu: 4,  nv: 6,  col: solid(NOSE_DARK) },
+
+    // Eyes
+    { p: [-182, -40, -30],   r: [7, 7, 7],     nu: 6,  nv: 8,  col: solid(BLACK) },
+    { p: [-182, -40, 30],    r: [7, 7, 7],     nu: 6,  nv: 8,  col: solid(BLACK) },
+
+    // Horns
+    { p: [-142, -82, -26],   r: [6, 22, 6],    nu: 6,  nv: 8,  col: solid(CREAM) },
+    { p: [-142, -82, 26],    r: [6, 22, 6],    nu: 6,  nv: 8,  col: solid(CREAM) },
+
+    // Ears
+    { p: [-128, -34, -58],   r: [30, 12, 9],   nu: 6,  nv: 8,  col: solid(BLACK) },
+    { p: [-128, -34, 58],    r: [30, 12, 9],   nu: 6,  nv: 8,  col: solid(BLACK) },
+
+    // Legs
+    { p: [-62, 110, -36],    r: [14, 62, 14],  nu: 10, nv: 10, col: solid(WHITE) },
+    { p: [-62, 110, 36],     r: [14, 62, 14],  nu: 10, nv: 10, col: solid(WHITE) },
+    { p: [62, 110, -36],     r: [14, 62, 14],  nu: 10, nv: 10, col: solid(WHITE) },
+    { p: [62, 110, 36],      r: [14, 62, 14],  nu: 10, nv: 10, col: solid(WHITE) },
+
+    // Hooves
+    { p: [-62, 168, -36],    r: [15, 10, 15],  nu: 6,  nv: 8,  col: solid(HOOF) },
+    { p: [-62, 168, 36],     r: [15, 10, 15],  nu: 6,  nv: 8,  col: solid(HOOF) },
+    { p: [62, 168, -36],     r: [15, 10, 15],  nu: 6,  nv: 8,  col: solid(HOOF) },
+    { p: [62, 168, 36],      r: [15, 10, 15],  nu: 6,  nv: 8,  col: solid(HOOF) },
+
+    // Udder
+    { p: [10, 70, 0],        r: [26, 18, 22],  nu: 8,  nv: 10, col: solid(PINK) },
+
+    // Tail and tuft
+    { p: [120, 25, 0],       r: [5, 58, 5],    nu: 6,  nv: 8,  col: solid(WHITE) },
+    { p: [122, 82, 0],       r: [11, 13, 11],  nu: 6,  nv: 8,  col: solid(BLACK) },
+  ];
+
+  // Builds one ellipsoid out of flat tiles, each oriented along the surface normal
+  function ellipsoid({ p: [cx, cy, cz], r: [rx, ry, rz], nu, nv, col }) {
+    const rr = (rx + rz) / 2;
+
+    for (let i = 0; i < nu; i++) {
+      const u = -Math.PI / 2 + Math.PI * (i + 0.5) / nu;
+      const cu = Math.cos(u), su = Math.sin(u);
+      const H = Math.max(3, Math.PI * ry / nu) + 2;
+
+      for (let j = 0; j < nv; j++) {
+        const v = 2 * Math.PI * (j + 0.5) / nv;
+        const x = rx * cu * Math.cos(v);
+        const y = ry * su;
+        const z = rz * cu * Math.sin(v);
+
+        const n = norm([x / (rx * rx), y / (ry * ry), z / (rz * rz)]);
+        const W = Math.max(3, 2 * Math.PI * rr * cu / nv) + 2;
+
+        // Rotate the tile so its front faces along the surface normal
+        const th = Math.atan2(n[0], n[2]) * 180 / Math.PI;
+        const ph = -Math.asin(n[1]) * 180 / Math.PI;
+
+        // Simple flat shading for the faceted look
+        const shade = 0.4 + 0.6 * Math.max(0, n[0] * L[0] + n[1] * L[1] + n[2] * L[2]);
+        const [R, G, B] = col([cx + x, cy + y, cz + z]).map(c => Math.round(c * shade));
+
+        const d = document.createElement("div");
+        d.className = "t";
+        d.style.cssText =
+          `width:${W}px;height:${H}px;` +
+          `margin:${-H / 2}px 0 0 ${-W / 2}px;` +
+          `transform:translate3d(${cx + x}px,${cy + y}px,${cz + z}px) rotateY(${th}deg) rotateX(${ph}deg);` +
+          `background:rgb(${R},${G},${B})`;
+        cow.appendChild(d);
+      }
+    }
+  }
+
+  parts.forEach(ellipsoid);
 </script>
 </body>
 </html>
