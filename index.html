@@ -1,230 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grass Blocks</title>
-  <style>
-    html,
-    body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background: #cfe8ff;
-      color: #fff;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grass Blocks</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #cfe8ff; color: #fff; font-family: "Press Start 2P", "Courier New", monospace; }
+  canvas { display: block; }
+  .hidden { display: none !important; }
 
-    canvas {
-      display: block;
-    }
+  /* Menus */
+  #menu { position: fixed; inset: 0; }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0, 0, 0, 0.3); }
+  .logo { margin: 0 0 12px; font-size: 44px; line-height: 1.3; text-align: center; color: #ffd54a; text-shadow: 4px 4px 0 #6b4a00; letter-spacing: 2px; }
+  .tag { margin: 0 0 22px; font-size: 11px; text-shadow: 2px 2px 0 #333; }
+  .title-bar { margin: 0 0 8px; font-size: 16px; text-shadow: 3px 3px 0 #333; }
+  .mc-text { max-width: 360px; margin: 0; font-size: 10px; line-height: 1.8; text-align: center; text-shadow: 2px 2px 0 #333; }
+  .mc-btn { width: 340px; height: 48px; padding: 0; border: 0; cursor: pointer; font: 14px "Press Start 2P", "Courier New", monospace; color: #fff; background: #6e6e6e; box-shadow: inset -4px -4px 0 #3a3a3a, inset 4px 4px 0 #a9a9a9; text-shadow: 2px 2px 0 #333; }
+  .mc-btn:hover { background: #8282bd; }
+  .mc-btn:active { box-shadow: inset 4px 4px 0 #3a3a3a, inset -4px -4px 0 #a9a9a9; }
+  .mc-btn:focus-visible { outline: 3px solid #ffd54a; outline-offset: 2px; }
+  .mc-input { width: 340px; height: 44px; box-sizing: border-box; padding: 0 10px; font: 14px "Press Start 2P", "Courier New", monospace; color: #fff; background: #000; border: 3px solid #fff; outline: none; }
+  .mc-range { width: 340px; }
 
-    #start,
-    #crosshair,
-    #hotbar,
-    #inventory,
-    #toast {
-      position: fixed;
-    }
-
-    #start {
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin: 0;
-      border: 0;
-      background: rgba(16, 36, 56, 0.4);
-      color: #fff;
-      font: inherit;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    #start:focus-visible {
-      outline: 3px solid #fff;
-      outline-offset: -12px;
-    }
-
-    .title {
-      font-size: 2rem;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-    }
-
-    .hint {
-      padding: 0 16px;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      opacity: 0.85;
-    }
-
-    #crosshair {
-      left: 50%;
-      top: 50%;
-      width: 6px;
-      height: 6px;
-      margin: -3px 0 0 -3px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
-      pointer-events: none;
-    }
-
-    #hotbar {
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 6px;
-      pointer-events: none;
-    }
-
-    .slot {
-      position: relative;
-      width: 56px;
-      height: 56px;
-      box-sizing: border-box;
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      background: rgba(0, 0, 0, 0.35);
-    }
-
-    .slot.selected {
-      border-color: #fff;
-    }
-
-    .swatch {
-      position: absolute;
-      inset: 5px;
-      border-radius: 2px;
-      background-size: cover;
-      image-rendering: pixelated;
-      box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.2);
-    }
-
-    .num,
-    .count {
-      position: absolute;
-      font-size: 12px;
-      font-weight: 700;
-      text-shadow: 0 1px 2px #000;
-    }
-
-    .num {
-      left: 4px;
-      top: 2px;
-    }
-
-    .count {
-      right: 5px;
-      bottom: 3px;
-    }
-
-    #inventory {
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      padding: 18px;
-      border-radius: 8px;
-      background: rgba(16, 36, 56, 0.85);
-      text-align: center;
-    }
-
-    #grid {
-      display: grid;
-      grid-template-columns: repeat(4, 64px);
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    #grid .slot {
-      width: 64px;
-      height: 64px;
-    }
-
-    #toast {
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 8px 14px;
-      border-radius: 6px;
-      background: rgba(0, 0, 0, 0.6);
-      font-size: 0.9rem;
-      white-space: nowrap;
-    }
-
-    #bars {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 12px;
-      pointer-events: none;
-    }
-
-    .bar {
-      width: 118px;
-      height: 14px;
-      overflow: hidden;
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.45);
-    }
-
-    .fill {
-      height: 100%;
-      width: 100%;
-    }
-
-    .health .fill {
-      background: #e0463d;
-    }
-
-    .hunger .fill {
-      background: #d9913f;
-    }
-
-    #start.hidden,
-    #inventory.hidden,
-    #toast.hidden {
-      display: none;
-    }
-  </style>
+  /* HUD */
+  #mpstatus { position: fixed; top: 10px; left: 10px; font-size: 10px; text-shadow: 2px 2px 0 #333; }
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25); pointer-events: none; }
+  #bars { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; pointer-events: none; }
+  .bar { width: 118px; height: 14px; overflow: hidden; border: 2px solid rgba(255, 255, 255, 0.35); border-radius: 4px; background: rgba(0, 0, 0, 0.45); }
+  .fill { height: 100%; width: 100%; }
+  .health .fill { background: #e0463d; }
+  .hunger .fill { background: #d9913f; }
+  #hotbar { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; pointer-events: none; }
+  .slot { position: relative; width: 56px; height: 56px; box-sizing: border-box; border: 2px solid rgba(255, 255, 255, 0.35); background: rgba(0, 0, 0, 0.35); }
+  .slot.selected { border-color: #fff; }
+  .swatch { position: absolute; inset: 5px; border-radius: 2px; background-size: cover; image-rendering: pixelated; }
+  .num, .count { position: absolute; font-size: 10px; text-shadow: 2px 2px 0 #000; }
+  .num { left: 4px; top: 4px; }
+  .count { right: 5px; bottom: 5px; }
+  #inventory { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 18px; background: rgba(16, 36, 56, 0.85); text-align: center; }
+  #grid { display: grid; grid-template-columns: repeat(5, 64px); gap: 8px; margin-top: 12px; }
+  #grid .slot { width: 64px; height: 64px; }
+  #toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 8px 14px; background: rgba(0, 0, 0, 0.6); font-size: 10px; white-space: nowrap; }
+  body:not(.playing) #crosshair, body:not(.playing) #bars, body:not(.playing) #hotbar, body:not(.playing) #mpstatus, body:not(.playing) #inventory { display: none; }
+</style>
 </head>
 <body>
-  <button id="start" type="button">
-    <span class="title">Click to play</span>
-    <span class="hint">
-      WASD move · Mouse or arrow keys look · Space jump<br>
-      Left click break · Right click place<br>
-      1–4 or scroll to select · E inventory · Esc release mouse
-    </span>
-  </button>
-  <div id="crosshair"></div>
-  <div id="hotbar"></div>
-  <div id="inventory" class="hidden">
-    <div class="hint">Inventory · press E to close</div>
-    <div id="grid"></div>
+  <div id="menu">
+    <div id="screen-main" class="screen">
+      <h1 class="logo">GRASS<br>BLOCKS</h1>
+      <p class="tag">NOW WITH MULTIPLAYER!</p>
+      <button class="mc-btn" data-go="single">SINGLEPLAYER</button>
+      <button class="mc-btn" data-go="multi">MULTIPLAYER</button>
+      <button class="mc-btn" data-go="options">OPTIONS</button>
+    </div>
+    <div id="screen-multi" class="screen hidden">
+      <h2 class="title-bar">MULTIPLAYER</h2>
+      <p class="mc-text">Other tabs of this browser join your world. Blocks sync live.</p>
+      <input id="name" class="mc-input" maxlength="10" placeholder="NAME" value="Steve">
+      <button class="mc-btn" id="join">JOIN WORLD</button>
+      <button class="mc-btn" data-go="main">BACK</button>
+    </div>
+    <div id="screen-pause" class="screen hidden">
+      <h2 class="title-bar">GAME PAUSED</h2>
+      <button class="mc-btn" id="resume">BACK TO GAME</button>
+      <button class="mc-btn" data-go="options">OPTIONS</button>
+      <button class="mc-btn" id="quit">QUIT TO TITLE</button>
+    </div>
+    <div id="screen-options" class="screen hidden">
+      <h2 class="title-bar">OPTIONS</h2>
+      <p class="mc-text">MOUSE SENSITIVITY</p>
+      <input id="sens" class="mc-range" type="range" min="20" max="250" value="100">
+      <button class="mc-btn" id="optBack">DONE</button>
+    </div>
   </div>
+
+  <div id="mpstatus" class="hidden"></div>
+  <div id="crosshair"></div>
+  <div id="bars"><div class="bar health"><div class="fill"></div></div><div class="bar hunger"><div class="fill"></div></div></div>
+  <div id="hotbar"></div>
+  <div id="inventory" class="hidden"><div class="mc-text">INVENTORY (E TO CLOSE)</div><div id="grid"></div></div>
   <div id="toast" class="hidden"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // Grass blocks: a 20 x 20 field of cubes you can walk on, break and build with.
-    // Converted from the Ursina Python script.
-
-    const GRID = 20;                 // for i in range(20): for j in range(20)
-    const SPEED = 5;                 // walk speed, units per second
-    const GRAVITY = 24;
-    const JUMP_SPEED = 9.8;          // roughly a 2-unit jump
-    const HALF = 0.3;                // player is 0.6 wide and 1.8 tall
-    const HEIGHT = 1.8;
-    const EYE = 1.6;                 // camera height above the feet
-    const REACH = 6;
-    const TURN = 2;                  // arrow-key look speed, radians per second
+    // ---------- Settings ----------
+    const GRID = 40;                      // land is 40 x 40 blocks
+    const SPEED = 5, SPRINT_SPEED = 8, GRAVITY = 24, JUMP_SPEED = 9.8;
+    const HALF = 0.3, HEIGHT = 1.8, EYE = 1.6, REACH = 6, TURN = 2;
+    const BLADES_PER_CELL = 60;           // raise for thicker grass, lower it if your computer slows down
+    const MAX_BLADES = 120000;
+    const SPAWN = new THREE.Vector3(GRID / 2, 0.5, GRID / 2);
+    let sensitivity = 1;
+    let state = 'title';                  // 'title' | 'playing' | 'paused'
 
     // ---------- Renderer, camera, scene ----------
     const scene = new THREE.Scene();
@@ -233,28 +102,22 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(innerWidth, innerHeight);
     document.body.appendChild(renderer.domElement);
+    const canvas = renderer.domElement;
 
-    // ---------- Sky (stands in for Ursina's Sky()) ----------
+    // Gradient sky dome
     const SKY_RADIUS = 400;
     const skyGeometry = new THREE.SphereGeometry(SKY_RADIUS, 32, 16);
     const skyPositions = skyGeometry.attributes.position;
     const skyColors = [];
-    const horizonColor = new THREE.Color(0xcfe8ff);
-    const zenithColor = new THREE.Color(0x3a7bd5);
-    const shade = new THREE.Color();
+    const horizonColor = new THREE.Color(0xcfe8ff), zenithColor = new THREE.Color(0x3a7bd5), shade = new THREE.Color();
     for (let v = 0; v < skyPositions.count; v++) {
-      const t = Math.max(0, skyPositions.getY(v) / SKY_RADIUS);
-      shade.copy(horizonColor).lerp(zenithColor, t);
+      shade.copy(horizonColor).lerp(zenithColor, Math.max(0, skyPositions.getY(v) / SKY_RADIUS));
       skyColors.push(shade.r, shade.g, shade.b);
     }
     skyGeometry.setAttribute('color', new THREE.Float32BufferAttribute(skyColors, 3));
-    const sky = new THREE.Mesh(
-      skyGeometry,
-      new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false })
-    );
+    const sky = new THREE.Mesh(skyGeometry, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false }));
     scene.add(sky);
 
-    // ---------- Light ----------
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const sun = new THREE.DirectionalLight(0xffffff, 0.5);
     sun.position.set(5, 10, 3);
@@ -262,70 +125,90 @@
 
     // ---------- Block types, textures and inventory ----------
     const TYPES = {
-      grass: [94, 160, 58],
-      dirt: [134, 96, 60],
-      stone: [128, 128, 132],
-      wood: [150, 110, 64]
+      grass: [94, 160, 58], dirt: [134, 96, 60], stone: [128, 128, 132], wood: [150, 110, 64],
+      sand: [222, 205, 140], glass: [170, 215, 235], brick: [160, 70, 55], bounce: [200, 80, 220],
+      gold: [230, 190, 60], leaves: [50, 120, 40], bedrock: [40, 40, 44]
     };
-    const ITEMS = Object.keys(TYPES);
-    const inventory = { grass: 16, dirt: 16, stone: 16, wood: 16 };
+    const ITEMS = ['grass', 'dirt', 'stone', 'wood', 'sand', 'glass', 'brick', 'bounce', 'gold', 'leaves'];
+    const inventory = Object.fromEntries(ITEMS.map((name) => [name, 16]));
     let selected = 0;
 
-    // Noisy texture in the block's colour (stands in for texture='grass.png')
     function makeTexture([r, g, b]) {
-      const size = 64;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      const ctx = c.getContext('2d');
+      for (let y = 0; y < 64; y++) {
+        for (let x = 0; x < 64; x++) {
           const k = 0.8 + Math.random() * 0.35;
           ctx.fillStyle = `rgb(${Math.round(r * k)}, ${Math.round(g * k)}, ${Math.round(b * k)})`;
           ctx.fillRect(x, y, 1, 1);
         }
       }
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.magFilter = THREE.NearestFilter;  // crisp, blocky pixels
+      const texture = new THREE.CanvasTexture(c);
+      texture.magFilter = THREE.NearestFilter;
       return texture;
     }
 
-    const materials = {};
+    // Grass tufts for the inventory icon, so it matches the blades in the world
+    function drawTufts(ctx) {
+      for (let x = 0; x < 64; x += 5) {
+        ctx.fillStyle = (x / 5) % 2 ? '#9be05a' : '#2f6b22';
+        ctx.beginPath();
+        ctx.moveTo(x, 14);
+        ctx.lineTo(x + 2.5, 0);
+        ctx.lineTo(x + 5, 14);
+        ctx.fill();
+      }
+    }
+
+    const materials = {}, icons = {};
     for (const name of ITEMS) {
       materials[name] = new THREE.MeshLambertMaterial({ map: makeTexture(TYPES[name]) });
+      const icon = document.createElement('canvas');
+      icon.width = icon.height = 64;
+      const ictx = icon.getContext('2d');
+      ictx.drawImage(materials[name].map.image, 0, 0);
+      if (name === 'grass') drawTufts(ictx);
+      icons[name] = icon.toDataURL();
     }
+
+    materials.bedrock = new THREE.MeshLambertMaterial({ map: makeTexture(TYPES.bedrock) });
 
     // ---------- World: blocks stored by integer cell (x, y, z) ----------
-    // A cell's cube is centred on its integer position and spans ±0.5.
-    // Grass sits at y = 0, so its top surface is at y = 0.5.
     const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
     const world = new Map();
-    const key = (x, y, z) => `${x},${y},${z}`;
-
-    function setBlock(x, y, z, type) {
-      const mesh = new THREE.Mesh(cubeGeometry, materials[type]);
-      mesh.position.set(x, y, z);
-      mesh.userData.type = type;
-      scene.add(mesh);
-      world.set(key(x, y, z), mesh);
-    }
+    const edits = new Map();              // every change made, so late joiners can catch up
+    const key = (x, y, z) => ((x + 64) * 256 + (y + 64)) * 256 + (z + 64);
 
     function removeBlock(x, y, z) {
       const k = key(x, y, z);
-      const mesh = world.get(k);
-      if (!mesh) return null;
-      scene.remove(mesh);
+      const cell = world.get(k);
+      if (!cell) return null;
       world.delete(k);
-      return mesh.userData.type;
+      return cell.type;
+    }
+
+    function setBlock(x, y, z, type) {
+      removeBlock(x, y, z);
+      world.set(key(x, y, z), { x, y, z, type });
+    }
+
+    // Used for your own changes and for changes from other players
+    function applyBlock(x, y, z, type, quiet) {
+      if (type) setBlock(x, y, z, type); else removeBlock(x, y, z);
+      edits.set(key(x, y, z), { x, y, z, type });
+      if (!quiet) rebuildGrass();
     }
 
     for (let i = 0; i < GRID; i++) {
       for (let j = 0; j < GRID; j++) {
         setBlock(j, 0, i, 'grass');
+        for (let y = -1; y >= -2; y--) setBlock(j, y, i, 'dirt');
+        for (let y = -3; y >= -6; y--) setBlock(j, y, i, 'stone');
+        setBlock(j, -7, i, 'bedrock');
       }
     }
 
-    // Wireframe that outlines the block you're looking at
     const outline = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02, 1.02, 1.02)),
       new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 })
@@ -334,16 +217,24 @@
     scene.add(outline);
 
     // ---------- Grass: thick, swaying blades on every exposed grass top ----------
-    const BLADES_PER_CELL = 60;   // raise for thicker grass, lower it if your computer slows down
-    const MAX_BLADES = 60000;     // room for about 1000 grass tops
+    const hand = new THREE.Group();
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 0.2), new THREE.MeshLambertMaterial({ color: 0xe0b48a }));
+    arm.position.y = -0.3;
+    const held = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.28), materials.grass);
+    held.position.set(0, -0.66, -0.12);
+    hand.add(arm, held);
+    hand.position.set(0.45, -0.45, -0.7);
+    camera.add(hand);
+    scene.add(camera);
+    let swing = 0;
+
     const grassTime = { value: 0 };
 
-    // Blade shape: a tapered green stroke with transparent space around it
     function makeBladeTexture() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 16;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
+      const c = document.createElement('canvas');
+      c.width = 16;
+      c.height = 64;
+      const ctx = c.getContext('2d');
       const gradient = ctx.createLinearGradient(0, 64, 0, 0);
       gradient.addColorStop(0, '#2f6b22');
       gradient.addColorStop(1, '#9be05a');
@@ -354,25 +245,20 @@
       ctx.lineTo(8, 0);
       ctx.closePath();
       ctx.fill();
-      return new THREE.CanvasTexture(canvas);
+      return new THREE.CanvasTexture(c);
     }
 
     const bladeGeometry = new THREE.PlaneGeometry(0.14, 1);
-    bladeGeometry.translate(0, 0.5, 0);   // base at y = 0, tip at y = 1
+    bladeGeometry.translate(0, 0.5, 0);
 
-    const grassMaterial = new THREE.MeshLambertMaterial({
-      map: makeBladeTexture(),
-      alphaTest: 0.5,
-      side: THREE.DoubleSide
-    });
-
+    const grassMaterial = new THREE.MeshLambertMaterial({ map: makeBladeTexture(), alphaTest: 0.5, side: THREE.DoubleSide });
     // The wind sway runs on the GPU, so the CPU does no per-frame work
     grassMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = grassTime;
       shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader.replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
-        float bend = position.y * position.y;   // only the tips move
+        float bend = position.y * position.y;
         float wave = sin(uTime * 2.2 + instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 1.1)
                    + 0.5 * sin(uTime * 4.3 + instanceMatrix[3].z * 2.3);
         transformed.x += wave * 0.2 * bend;
@@ -382,58 +268,91 @@
 
     const grass = new THREE.InstancedMesh(bladeGeometry, grassMaterial, MAX_BLADES);
     grass.frustumCulled = false;
+    grass.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_BLADES * 3), 3);
     scene.add(grass);
 
-    // Deterministic "random" so blades stay put when neighbouring blocks change
     function rnd(a, b, c, d) {
       const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7 + d * 19.19) * 43758.5453;
       return s - Math.floor(s);
     }
 
-    const _pos = new THREE.Vector3();
-    const _quat = new THREE.Quaternion();
-    const _scale = new THREE.Vector3();
+    const _pos = new THREE.Vector3(), _quat = new THREE.Quaternion(), _scale = new THREE.Vector3();
     const _matrix = new THREE.Matrix4();
-    const _tint = new THREE.Color();
     const UP = new THREE.Vector3(0, 1, 0);
 
-    // Only runs when you break or place a block, not every frame
+    // Each grass top's blades are worked out once and remembered
+    const bladeCache = new Map();
+    function bladesFor(x, y, z) {
+      const k = key(x, y, z);
+      if (bladeCache.has(k)) return bladeCache.get(k);
+      const blades = { matrix: new Float32Array(BLADES_PER_CELL * 16), color: new Float32Array(BLADES_PER_CELL * 3) };
+      for (let b = 0; b < BLADES_PER_CELL; b++) {
+        _pos.set(x + (rnd(x, z, b, 0) - 0.5) * 0.95, y + 0.5, z + (rnd(x, z, b, 1) - 0.5) * 0.95);
+        _quat.setFromAxisAngle(UP, rnd(x, z, b, 2) * Math.PI * 2);
+        _scale.set(1, 0.35 + rnd(x, z, b, 3) * 0.45, 1);
+        _matrix.compose(_pos, _quat, _scale).toArray(blades.matrix, b * 16);
+        blades.color.set([
+          0.75 + rnd(x, z, b, 4) * 0.25,
+          0.85 + rnd(x, z, b, 5) * 0.15,
+          0.75 + rnd(x, z, b, 6) * 0.25
+        ], b * 3);
+      }
+      bladeCache.set(k, blades);
+      return blades;
+    }
+
+    // Blocks are drawn in batches, one instanced mesh per type, skipping blocks hidden on all six sides
+    const BLOCK_CAP = 20000;
+    const blockMeshes = {};
+    for (const name in TYPES) {
+      blockMeshes[name] = new THREE.InstancedMesh(cubeGeometry, materials[name], BLOCK_CAP);
+      blockMeshes[name].frustumCulled = false;
+      scene.add(blockMeshes[name]);
+    }
+    const _quat0 = new THREE.Quaternion(), _unit = new THREE.Vector3(1, 1, 1);
+
+    function rebuildBlocks() {
+      const counts = {};
+      for (const name in blockMeshes) counts[name] = 0;
+      for (const { x, y, z, type } of world.values()) {
+        if (world.has(key(x + 1, y, z)) && world.has(key(x - 1, y, z)) && world.has(key(x, y + 1, z)) &&
+            world.has(key(x, y - 1, z)) && world.has(key(x, y, z + 1)) && world.has(key(x, y, z - 1))) continue;
+        _pos.set(x, y, z);
+        blockMeshes[type].setMatrixAt(counts[type]++, _matrix.compose(_pos, _quat0, _unit));
+      }
+      for (const name in blockMeshes) {
+        blockMeshes[name].count = counts[name];
+        blockMeshes[name].instanceMatrix.needsUpdate = true;
+      }
+    }
+
+    // Only runs when a block changes, not every frame
     function rebuildGrass() {
+      rebuildBlocks();
       let n = 0;
-      for (const mesh of world.values()) {
-        const { x, y, z } = mesh.position;
-        if (mesh.userData.type !== 'grass' || world.has(key(x, y + 1, z))) continue;
-        for (let b = 0; b < BLADES_PER_CELL && n < MAX_BLADES; b++, n++) {
-          _pos.set(x + (rnd(x, z, b, 0) - 0.5) * 0.95, y + 0.5, z + (rnd(x, z, b, 1) - 0.5) * 0.95);
-          _quat.setFromAxisAngle(UP, rnd(x, z, b, 2) * Math.PI * 2);
-          _scale.set(1, 0.35 + rnd(x, z, b, 3) * 0.45, 1);
-          grass.setMatrixAt(n, _matrix.compose(_pos, _quat, _scale));
-          _tint.setRGB(
-            0.75 + rnd(x, z, b, 4) * 0.25,
-            0.85 + rnd(x, z, b, 5) * 0.15,
-            0.75 + rnd(x, z, b, 6) * 0.25
-          );
-          grass.setColorAt(n, _tint);
-        }
+      for (const { x, y, z, type } of world.values()) {
+        if (type !== 'grass' || world.has(key(x, y + 1, z))) continue;
+        if (n + BLADES_PER_CELL > MAX_BLADES) break;
+        const blades = bladesFor(x, y, z);
+        grass.instanceMatrix.array.set(blades.matrix, n * 16);
+        grass.instanceColor.array.set(blades.color, n * 3);
+        n += BLADES_PER_CELL;
       }
       grass.count = n;
       grass.instanceMatrix.needsUpdate = true;
-      if (grass.instanceColor) grass.instanceColor.needsUpdate = true;
+      grass.instanceColor.needsUpdate = true;
     }
-
     rebuildGrass();
 
-    // ---------- Player and collision ----------
+    // ---------- Player, physics and stats ----------
     const keys = {};
-    const player = { pos: new THREE.Vector3(0, 0.5, 0), vy: 0, grounded: true };
-    const SPAWN = new THREE.Vector3(0, 0.5, 0);   // Ursina's default player position
-    let yaw = Math.PI;   // start facing +z, like Ursina's default
-    let pitch = 0;
+    const player = { pos: SPAWN.clone(), vy: 0, grounded: true, peakY: 0.5 };
+    const stats = { health: 20, hunger: 20 };   // 20 is full
+    let yaw = Math.PI, pitch = 0;
 
-    const lo = (a) => Math.floor(a + 0.5);     // first cell that contains point a
-    const hi = (b) => Math.ceil(b + 0.5) - 1;  // last cell that contains point b
+    const lo = (a) => Math.floor(a + 0.5);      // first cell that contains point a
+    const hi = (b) => Math.ceil(b + 0.5) - 1;   // last cell that contains point b
 
-    // Does the player's box at feet position (x, y, z) overlap any block?
     function hits(x, y, z) {
       for (let i = lo(x - HALF); i <= hi(x + HALF); i++) {
         for (let j = lo(y); j <= hi(y + HEIGHT); j++) {
@@ -445,61 +364,76 @@
       return false;
     }
 
+    function damage(amount) {
+      stats.health -= amount;
+      if (amount >= 1) playSound('hurt');
+      if (stats.health <= 0) die();
+    }
+
+    function die() {
+      stats.health = 20;
+      stats.hunger = 20;
+      player.pos.copy(SPAWN);
+      player.vy = 0;
+      player.peakY = SPAWN.y;
+      showToast('You died. Back to the middle of the land.');
+    }
+
     function update(dt) {
       const p = player.pos;
-
-      // Arrow keys look around (backup for when the mouse can't)
       if (keys.ArrowLeft) yaw += TURN * dt;
       if (keys.ArrowRight) yaw -= TURN * dt;
       if (keys.ArrowUp) pitch = Math.min(1.5, pitch + TURN * dt);
       if (keys.ArrowDown) pitch = Math.max(-1.5, pitch - TURN * dt);
 
-      // Movement relative to the direction the camera faces
-      let mx = 0;
-      let mz = 0;
+      let mx = 0, mz = 0;
       if (keys.KeyW) mz += 1;
       if (keys.KeyS) mz -= 1;
       if (keys.KeyD) mx += 1;
       if (keys.KeyA) mx -= 1;
       const len = Math.hypot(mx, mz) || 1;
-      const s = (SPEED * dt) / len;
+      const sprint = (keys.ShiftLeft || keys.ShiftRight) && keys.KeyW && stats.hunger > 0;
+      const s = ((sprint ? SPRINT_SPEED : SPEED) * dt) / len;
       const dx = (-Math.sin(yaw) * mz + Math.cos(yaw) * mx) * s;
       const dz = (-Math.cos(yaw) * mz - Math.sin(yaw) * mx) * s;
-
       if (!hits(p.x + dx, p.y, p.z)) p.x += dx;
       if (!hits(p.x, p.y, p.z + dz)) p.z += dz;
 
-      // Jump with Space
       if (keys.Space && player.grounded) player.vy = JUMP_SPEED;
-
-      // Gravity: land on top of blocks, or bump the head on a ceiling
       player.vy -= GRAVITY * dt;
       const ny = p.y + player.vy * dt;
       if (!hits(p.x, ny, p.z)) {
         p.y = ny;
-      } else if (player.vy < 0) {
-        p.y = lo(ny) + 0.5;
-        player.vy = 0;
       } else {
-        p.y = hi(ny + HEIGHT) - 0.5 - HEIGHT;
+        p.y = player.vy < 0 ? lo(ny) + 0.5 : hi(ny + HEIGHT) - 0.5 - HEIGHT;
         player.vy = 0;
       }
+
+      const wasGrounded = player.grounded;
       player.grounded = player.vy <= 0 && hits(p.x, p.y - 0.02, p.z);
-
-      // Fell off the world: back to the spawn point
-      if (p.y < -20) {
-        p.copy(SPAWN);
-        player.vy = 0;
+      if (player.grounded && !wasGrounded && world.get(key(Math.round(p.x), Math.round(p.y - 0.5), Math.round(p.z)))?.type === 'bounce') {
+        player.vy = 13;
+        player.grounded = false;
+        playSound('bounce');
       }
+      if (!player.grounded) player.peakY = Math.max(player.peakY, p.y);
+      if (player.grounded && !wasGrounded && player.peakY - p.y > 3) damage((player.peakY - p.y - 3) * 2);
+      if (player.grounded) player.peakY = p.y;
+      if (p.y < -20) die();
 
-      // Camera
+      const moving = mx !== 0 || mz !== 0;
+      stats.hunger = Math.max(0, stats.hunger - (sprint ? 0.1 : moving ? 0.03 : 0.012) * dt);
+      if (stats.hunger > 12 && stats.health < 20) stats.health = Math.min(20, stats.health + 0.6 * dt);
+      if (stats.hunger === 0) damage(0.5 * dt);
+
       camera.position.set(p.x, p.y + EYE, p.z);
       camera.rotation.set(pitch, yaw, 0, 'YXZ');
+      camera.fov += ((sprint ? 84 : 75) - camera.fov) * Math.min(1, dt * 8);
+      camera.updateProjectionMatrix();
       sky.position.copy(camera.position);
     }
 
     // ---------- Aiming, breaking and placing ----------
-    // Walk along the view ray and find the first block, plus the empty cell just before it.
     function aim() {
       const dx = -Math.sin(yaw) * Math.cos(pitch);
       const dy = Math.sin(pitch);
@@ -514,46 +448,172 @@
       return { hit: null, place: null };
     }
 
-    // Would a block at this cell trap the player inside itself?
     function overlapsPlayer(x, y, z) {
       const p = player.pos;
-      return Math.abs(x - p.x) < HALF + 0.5 &&
-             Math.abs(z - p.z) < HALF + 0.5 &&
+      return Math.abs(x - p.x) < HALF + 0.5 && Math.abs(z - p.z) < HALF + 0.5 &&
              y + 0.5 > p.y && y - 0.5 < p.y + HEIGHT;
     }
 
-    // button 0 = break (adds the block to your inventory), button 2 = place the selected block
+    // button 0 = break (adds to inventory), button 2 = place the selected block
     function act(button) {
+      if (state !== 'playing') return;
       const target = aim();
+      swing = 1;
       if (button === 0 && target.hit) {
-        const type = removeBlock(...target.hit);
-        if (type) inventory[type]++;
+        const [x, y, z] = target.hit;
+        const cell = world.get(key(x, y, z));
+        if (cell.type === 'bedrock') return;
+        inventory[cell.type]++;
+        playSound('dig');
+        applyBlock(x, y, z, null);
+        netSend({ t: 'block', x, y, z, type: null });
       } else if (button === 2 && target.place) {
         const item = ITEMS[selected];
         const [x, y, z] = target.place;
         if (inventory[item] > 0 && !overlapsPlayer(x, y, z)) {
-          setBlock(x, y, z, item);
           inventory[item]--;
+          applyBlock(x, y, z, item);
+          playSound('place');
+          netSend({ t: 'block', x, y, z, type: item });
         }
       }
-      rebuildGrass();
       renderHUD();
     }
 
-    // ---------- Hotbar and inventory ----------
+    // ---------- Multiplayer (players in other tabs of this browser) ----------
+    const net = { id: Math.random().toString(36).slice(2), name: 'Steve', chan: null, peers: new Map(), last: 0 };
+
+    function netSend(msg) {
+      if (net.chan) net.chan.postMessage({ ...msg, from: net.id, name: net.name });
+    }
+
+    function joinNet(name) {
+      net.name = name;
+      net.chan = new BroadcastChannel('grass-blocks');
+      net.chan.onmessage = (e) => onNet(e.data);
+      netSend({ t: 'hello' });
+    }
+
+    function leaveNet() {
+      if (!net.chan) return;
+      netSend({ t: 'bye' });
+      net.chan.close();
+      net.chan = null;
+      for (const peer of net.peers.values()) scene.remove(peer.group);
+      net.peers.clear();
+    }
+
+    window.addEventListener('pagehide', () => { if (net.chan) netSend({ t: 'bye' }); });
+
+    function nameTag(text) {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 64;
+      const g = c.getContext('2d');
+      g.font = 'bold 34px monospace';
+      g.textAlign = 'center';
+      g.fillStyle = '#000';
+      g.fillText(text, 130, 48);
+      g.fillStyle = '#fff';
+      g.fillText(text, 128, 46);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+      sprite.scale.set(1.6, 0.4, 1);
+      sprite.position.y = 2.3;
+      return sprite;
+    }
+
+    // A blocky figure for each other player
+    function peerFor(id, name) {
+      let peer = net.peers.get(id);
+      if (!peer) {
+        const group = new THREE.Group();
+        const skin = new THREE.MeshLambertMaterial({ color: 0xe0b48a });
+        const shirt = new THREE.MeshLambertMaterial({ color: new THREE.Color().setHSL(Math.random(), 0.6, 0.5) });
+        const pants = new THREE.MeshLambertMaterial({ color: 0x3a4a9a });
+        const part = (w, h, d, mat, x, y) => {
+          const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+          m.position.set(x, y, 0);
+          group.add(m);
+        };
+        part(0.25, 0.75, 0.25, pants, -0.14, 0.375);
+        part(0.25, 0.75, 0.25, pants, 0.14, 0.375);
+        part(0.5, 0.75, 0.25, shirt, 0, 1.125);
+        part(0.5, 0.5, 0.5, skin, 0, 1.75);
+        group.add(nameTag(name));
+        scene.add(group);
+        peer = { group, target: new THREE.Vector3(), yaw: 0, seen: performance.now() };
+        net.peers.set(id, peer);
+      }
+      return peer;
+    }
+
+    function onNet(m) {
+      if (m.from === net.id) return;
+      if (m.t === 'hello') {
+        peerFor(m.from, m.name);
+        netSend({ t: 'sync', list: [...edits.values()] });
+      } else if (m.t === 'pos') {
+        const peer = peerFor(m.from, m.name);
+        peer.target.set(m.x, m.y, m.z);
+        peer.yaw = m.yaw;
+        peer.seen = performance.now();
+      } else if (m.t === 'block') {
+        applyBlock(m.x, m.y, m.z, m.type);
+      } else if (m.t === 'sync') {
+        for (const e of m.list) applyBlock(e.x, e.y, e.z, e.type, true);
+        rebuildGrass();
+      } else if (m.t === 'bye') {
+        const peer = net.peers.get(m.from);
+        if (peer) {
+          scene.remove(peer.group);
+          net.peers.delete(m.from);
+        }
+      }
+    }
+
+    function netTick(dt) {
+      const mp = document.getElementById('mpstatus');
+      mp.classList.toggle('hidden', !net.chan);
+      if (!net.chan) return;
+      const t = performance.now();
+      if (t - net.last > 100) {
+        net.last = t;
+        netSend({ t: 'pos', x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw });
+      }
+      for (const [id, peer] of net.peers) {
+        if (t - peer.seen > 6000) {
+          scene.remove(peer.group);
+          net.peers.delete(id);
+          continue;
+        }
+        peer.group.position.lerp(peer.target, Math.min(1, dt * 12));
+        peer.group.rotation.y = peer.yaw + Math.PI;
+      }
+      mp.textContent = `ONLINE: ${net.peers.size + 1}`;
+    }
+
+    // ---------- Hotbar, inventory and bars ----------
     const hotbarEl = document.getElementById('hotbar');
     const gridEl = document.getElementById('grid');
     const inventoryEl = document.getElementById('inventory');
+    const healthFill = document.querySelector('.health .fill');
+    const hungerFill = document.querySelector('.hunger .fill');
 
     function renderHUD() {
       const slots = ITEMS.map((name, i) => `
         <div class="slot${i === selected ? ' selected' : ''}">
           <span class="num">${i + 1}</span>
-          <div class="swatch" style="background: rgb(${TYPES[name].join(',')})"></div>
+          <div class="swatch" style="background-image: url(${icons[name]})"></div>
           <span class="count">${inventory[name]}</span>
         </div>`).join('');
+      held.material = materials[ITEMS[selected]];
       hotbarEl.innerHTML = slots;
       gridEl.innerHTML = slots;
+    }
+
+    function renderBars() {
+      healthFill.style.width = `${(stats.health / 20) * 100}%`;
+      hungerFill.style.width = `${(stats.hunger / 20) * 100}%`;
     }
 
     function select(index) {
@@ -561,12 +621,138 @@
       renderHUD();
     }
 
+    // ---------- Menus and game state ----------
+    const menu = document.getElementById('menu');
+    const screens = {};
+    for (const el of document.querySelectorAll('.screen')) screens[el.id] = el;
+    let current = 'screen-main', returnTo = 'screen-main';
+
+    function show(id) {
+      current = id;
+      menu.classList.remove('hidden');
+      for (const k in screens) screens[k].classList.toggle('hidden', k !== id);
+    }
+
+    // ---------- Sound (made in the browser, no files needed) ----------
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx.resume();
+    }
+    function tone(from, to, length, volume, wave = 'square') {
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = wave;
+      osc.frequency.setValueAtTime(from, t);
+      osc.frequency.exponentialRampToValueAtTime(to, t + length);
+      gain.gain.setValueAtTime(volume, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + length);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + length);
+    }
+    const SOUNDS = {
+      dig: () => tone(180, 60, 0.15, 0.3),
+      place: () => tone(260, 180, 0.08, 0.25),
+      bounce: () => tone(220, 660, 0.3, 0.3, 'sine'),
+      hurt: () => tone(400, 120, 0.25, 0.3, 'sawtooth')
+    };
+    function playSound(name) { if (SOUNDS[name]) SOUNDS[name](); }
+    const NOTES = [262, 294, 330, 392, 440, 523];
+    setInterval(() => {
+      if (state === 'playing') tone(NOTES[Math.floor(Math.random() * NOTES.length)], 200, 1.2, 0.03, 'sine');
+    }, 2000);
+
+    // ---------- Animals: pigs that wander the grass ----------
+    const pigSkin = new THREE.MeshLambertMaterial({ color: 0xf2a7b5 });
+    const pigs = [];
+    function spawnPig(x, z) {
+      const group = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.5), pigSkin);
+      body.position.y = 0.6;
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), pigSkin);
+      head.position.set(0, 0.8, 0.5);
+      group.add(body, head);
+      for (const [lx, lz] of [[-0.3, -0.18], [0.3, -0.18], [-0.3, 0.18], [0.3, 0.18]]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.3, 0.16), pigSkin);
+        leg.position.set(lx, 0.15, lz);
+        group.add(leg);
+      }
+      group.position.set(x, 0.5, z);
+      scene.add(group);
+      pigs.push({ group, target: null, wait: Math.random() * 3 });
+    }
+    for (let i = 0; i < 8; i++) spawnPig(3 + Math.random() * 34, 3 + Math.random() * 34);
+
+    function updatePigs(dt) {
+      for (const pig of pigs) {
+        const p = pig.group.position;
+        if (pig.wait > 0) { pig.wait -= dt; continue; }
+        if (!pig.target) pig.target = { x: p.x + (Math.random() - 0.5) * 6, z: p.z + (Math.random() - 0.5) * 6 };
+        const dx = pig.target.x - p.x, dz = pig.target.z - p.z;
+        const d = Math.hypot(dx, dz);
+        if (d < 0.1) { pig.target = null; pig.wait = 1 + Math.random() * 3; continue; }
+        const nx = p.x + (dx / d) * 1.2 * dt, nz = p.z + (dz / d) * 1.2 * dt;
+        if (!world.has(key(Math.round(nx), 0, Math.round(nz))) || world.has(key(Math.round(nx), 1, Math.round(nz)))) {
+          pig.target = null;
+          pig.wait = 0.5;
+          continue;
+        }
+        p.x = nx;
+        p.z = nz;
+        pig.group.rotation.y = Math.atan2(dx, dz);
+      }
+    }
+
+    function startGame() {
+      initAudio();
+      state = 'playing';
+      document.body.classList.add('playing');
+      menu.classList.add('hidden');
+      canvas.requestPointerLock();
+    }
+
+    function pauseGame() {
+      if (state !== 'playing') return;
+      state = 'paused';
+      document.body.classList.remove('playing');
+      show('screen-pause');
+      if (document.pointerLockElement === canvas) document.exitPointerLock();
+    }
+
+    function toTitle() {
+      leaveNet();
+      state = 'title';
+      document.body.classList.remove('playing');
+      show('screen-main');
+    }
+
+    document.querySelectorAll('[data-go]').forEach((btn) => {
+      btn.onclick = () => {
+        const go = btn.dataset.go;
+        if (go === 'single') { leaveNet(); startGame(); }
+        else if (go === 'multi') show('screen-multi');
+        else if (go === 'options') { returnTo = current; show('screen-options'); }
+        else if (go === 'main') show('screen-main');
+      };
+    });
+    document.getElementById('join').onclick = () => {
+      const name = document.getElementById('name').value.trim().slice(0, 10) || 'Player';
+      leaveNet();
+      joinNet(name);
+      startGame();
+    };
+    document.getElementById('resume').onclick = startGame;
+    document.getElementById('quit').onclick = toTitle;
+    document.getElementById('optBack').onclick = () => show(returnTo);
+    document.getElementById('sens').oninput = (e) => { sensitivity = e.target.value / 100; };
+
     // ---------- Controls ----------
-    const canvas = renderer.domElement;
-    const overlay = document.getElementById('start');
-    const toast = document.getElementById('toast');
     let locked = false;
-    let press = null;   // used when mouse lock is unavailable: drag to look, click to act
+    let press = null;   // used when mouse lock is blocked: drag to look, click to act
+    const toast = document.getElementById('toast');
 
     function showToast(text) {
       toast.textContent = text;
@@ -576,34 +762,27 @@
     }
 
     function look(dx, dy) {
-      yaw -= dx * 0.002;
-      pitch = Math.max(-1.5, Math.min(1.5, pitch - dy * 0.002));
+      yaw -= dx * 0.002 * sensitivity;
+      pitch = Math.max(-1.5, Math.min(1.5, pitch - dy * 0.002 * sensitivity));
     }
-
-    overlay.addEventListener('click', () => {
-      overlay.classList.add('hidden');
-      canvas.requestPointerLock();
-    });
 
     document.addEventListener('pointerlockchange', () => {
       locked = document.pointerLockElement === canvas;
-      if (!locked) overlay.classList.remove('hidden');   // Esc brings the start screen back
+      if (!locked && state === 'playing') pauseGame();
     });
 
-    // Some browsers and previews block mouse lock. Fall back to dragging to look.
     document.addEventListener('pointerlockerror', () => {
       showToast('Mouse lock is blocked here. Use the arrow keys to look, or drag with the mouse.');
     });
 
     canvas.addEventListener('mousedown', (e) => {
-      if (locked) {
-        act(e.button);
-        return;
-      }
+      if (state !== 'playing') return;
+      if (locked) { act(e.button); return; }
       press = { button: e.button, x: e.clientX, y: e.clientY, moved: false };
     });
 
     window.addEventListener('mousemove', (e) => {
+      if (state !== 'playing') return;
       if (locked) {
         look(e.movementX, e.movementY);
       } else if (press) {
@@ -620,23 +799,24 @@
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
     window.addEventListener('wheel', (e) => {
-      select(selected + (e.deltaY > 0 ? 1 : -1));
+      if (state === 'playing') select(selected + (e.deltaY > 0 ? 1 : -1));
     });
 
     document.addEventListener('keydown', (e) => {
       keys[e.code] = true;
       if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+      if (e.code === 'Escape') {
+        if (state === 'playing') pauseGame();
+        else if (state === 'paused') startGame();
+        return;
+      }
+      if (state !== 'playing') return;
       if (e.code === 'KeyE' && !e.repeat) inventoryEl.classList.toggle('hidden');
-      if (/^Digit[1-4]$/.test(e.code)) select(Number(e.code.slice(5)) - 1);
+      if (/^Digit[0-9]$/.test(e.code)) { const d = Number(e.code.slice(5)); select(d === 0 ? 9 : d - 1); }
     });
 
-    document.addEventListener('keyup', (e) => {
-      keys[e.code] = false;
-    });
-
-    window.addEventListener('blur', () => {
-      for (const k in keys) keys[k] = false;
-    });
+    document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+    window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
     window.addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight;
@@ -645,23 +825,41 @@
     });
 
     // ---------- Render loop ----------
-    let lastTime = performance.now();
+    // Title screen: the camera slowly circles the land behind the menu
+    function orbit(t) {
+      camera.position.set(GRID / 2 + Math.cos(t * 0.1) * 22, 10, GRID / 2 + Math.sin(t * 0.1) * 22);
+      camera.lookAt(GRID / 2, 0, GRID / 2);
+      sky.position.copy(camera.position);
+    }
 
+    let last = performance.now();
     function animate(now) {
       requestAnimationFrame(animate);
-      const dt = Math.min((now - lastTime) / 1000, 0.05);  // ignore long pauses
-      lastTime = now;
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
       grassTime.value = now / 1000;
-      update(dt);
 
-      const target = aim();
+      if (state === 'playing') {
+        update(dt);
+        renderBars();
+      } else if (state === 'title') {
+        orbit(now / 1000);
+      }
+
+      const target = state === 'playing' ? aim() : { hit: null };
       outline.visible = !!target.hit;
       if (target.hit) outline.position.set(...target.hit);
 
+      netTick(dt);
+      updatePigs(dt);
+      swing = Math.max(0, swing - dt * 4);
+      hand.rotation.x = -swing * 1.2;
+      hand.visible = state === 'playing';
       renderer.render(scene, camera);
     }
 
     renderHUD();
+    show('screen-main');
     requestAnimationFrame(animate);
   </script>
 </body>
