@@ -1,10 +1,668 @@
-<DOCTYPE HMTL!>
-  <head>
-    <title> New Project</title>
-  </head>
-  <body>
-    <script>
-      console.log(hi!);
-    </script>
-  </body>
-  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grass Blocks</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #cfe8ff;
+      color: #fff;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #start,
+    #crosshair,
+    #hotbar,
+    #inventory,
+    #toast {
+      position: fixed;
+    }
+
+    #start {
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 0;
+      border: 0;
+      background: rgba(16, 36, 56, 0.4);
+      color: #fff;
+      font: inherit;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    #start:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: -12px;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .hint {
+      padding: 0 16px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      opacity: 0.85;
+    }
+
+    #crosshair {
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      margin: -3px 0 0 -3px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
+    #hotbar {
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .slot {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      box-sizing: border-box;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .slot.selected {
+      border-color: #fff;
+    }
+
+    .swatch {
+      position: absolute;
+      inset: 5px;
+      border-radius: 2px;
+      background-size: cover;
+      image-rendering: pixelated;
+      box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .num,
+    .count {
+      position: absolute;
+      font-size: 12px;
+      font-weight: 700;
+      text-shadow: 0 1px 2px #000;
+    }
+
+    .num {
+      left: 4px;
+      top: 2px;
+    }
+
+    .count {
+      right: 5px;
+      bottom: 3px;
+    }
+
+    #inventory {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 18px;
+      border-radius: 8px;
+      background: rgba(16, 36, 56, 0.85);
+      text-align: center;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(4, 64px);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    #grid .slot {
+      width: 64px;
+      height: 64px;
+    }
+
+    #toast {
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.6);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    #bars {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .bar {
+      width: 118px;
+      height: 14px;
+      overflow: hidden;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .fill {
+      height: 100%;
+      width: 100%;
+    }
+
+    .health .fill {
+      background: #e0463d;
+    }
+
+    .hunger .fill {
+      background: #d9913f;
+    }
+
+    #start.hidden,
+    #inventory.hidden,
+    #toast.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <button id="start" type="button">
+    <span class="title">Click to play</span>
+    <span class="hint">
+      WASD move · Mouse or arrow keys look · Space jump<br>
+      Left click break · Right click place<br>
+      1–4 or scroll to select · E inventory · Esc release mouse
+    </span>
+  </button>
+  <div id="crosshair"></div>
+  <div id="hotbar"></div>
+  <div id="inventory" class="hidden">
+    <div class="hint">Inventory · press E to close</div>
+    <div id="grid"></div>
+  </div>
+  <div id="toast" class="hidden"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Grass blocks: a 20 x 20 field of cubes you can walk on, break and build with.
+    // Converted from the Ursina Python script.
+
+    const GRID = 20;                 // for i in range(20): for j in range(20)
+    const SPEED = 5;                 // walk speed, units per second
+    const GRAVITY = 24;
+    const JUMP_SPEED = 9.8;          // roughly a 2-unit jump
+    const HALF = 0.3;                // player is 0.6 wide and 1.8 tall
+    const HEIGHT = 1.8;
+    const EYE = 1.6;                 // camera height above the feet
+    const REACH = 6;
+    const TURN = 2;                  // arrow-key look speed, radians per second
+
+    // ---------- Renderer, camera, scene ----------
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // ---------- Sky (stands in for Ursina's Sky()) ----------
+    const SKY_RADIUS = 400;
+    const skyGeometry = new THREE.SphereGeometry(SKY_RADIUS, 32, 16);
+    const skyPositions = skyGeometry.attributes.position;
+    const skyColors = [];
+    const horizonColor = new THREE.Color(0xcfe8ff);
+    const zenithColor = new THREE.Color(0x3a7bd5);
+    const shade = new THREE.Color();
+    for (let v = 0; v < skyPositions.count; v++) {
+      const t = Math.max(0, skyPositions.getY(v) / SKY_RADIUS);
+      shade.copy(horizonColor).lerp(zenithColor, t);
+      skyColors.push(shade.r, shade.g, shade.b);
+    }
+    skyGeometry.setAttribute('color', new THREE.Float32BufferAttribute(skyColors, 3));
+    const sky = new THREE.Mesh(
+      skyGeometry,
+      new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false })
+    );
+    scene.add(sky);
+
+    // ---------- Light ----------
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+    sun.position.set(5, 10, 3);
+    scene.add(sun);
+
+    // ---------- Block types, textures and inventory ----------
+    const TYPES = {
+      grass: [94, 160, 58],
+      dirt: [134, 96, 60],
+      stone: [128, 128, 132],
+      wood: [150, 110, 64]
+    };
+    const ITEMS = Object.keys(TYPES);
+    const inventory = { grass: 16, dirt: 16, stone: 16, wood: 16 };
+    let selected = 0;
+
+    // Noisy texture in the block's colour (stands in for texture='grass.png')
+    function makeTexture([r, g, b]) {
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const k = 0.8 + Math.random() * 0.35;
+          ctx.fillStyle = `rgb(${Math.round(r * k)}, ${Math.round(g * k)}, ${Math.round(b * k)})`;
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.magFilter = THREE.NearestFilter;  // crisp, blocky pixels
+      return texture;
+    }
+
+    const materials = {};
+    for (const name of ITEMS) {
+      materials[name] = new THREE.MeshLambertMaterial({ map: makeTexture(TYPES[name]) });
+    }
+
+    // ---------- World: blocks stored by integer cell (x, y, z) ----------
+    // A cell's cube is centred on its integer position and spans ±0.5.
+    // Grass sits at y = 0, so its top surface is at y = 0.5.
+    const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const world = new Map();
+    const key = (x, y, z) => `${x},${y},${z}`;
+
+    function setBlock(x, y, z, type) {
+      const mesh = new THREE.Mesh(cubeGeometry, materials[type]);
+      mesh.position.set(x, y, z);
+      mesh.userData.type = type;
+      scene.add(mesh);
+      world.set(key(x, y, z), mesh);
+    }
+
+    function removeBlock(x, y, z) {
+      const k = key(x, y, z);
+      const mesh = world.get(k);
+      if (!mesh) return null;
+      scene.remove(mesh);
+      world.delete(k);
+      return mesh.userData.type;
+    }
+
+    for (let i = 0; i < GRID; i++) {
+      for (let j = 0; j < GRID; j++) {
+        setBlock(j, 0, i, 'grass');
+      }
+    }
+
+    // Wireframe that outlines the block you're looking at
+    const outline = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02, 1.02, 1.02)),
+      new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 })
+    );
+    outline.visible = false;
+    scene.add(outline);
+
+    // ---------- Grass: thick, swaying blades on every exposed grass top ----------
+    const BLADES_PER_CELL = 60;   // raise for thicker grass, lower it if your computer slows down
+    const MAX_BLADES = 60000;     // room for about 1000 grass tops
+    const grassTime = { value: 0 };
+
+    // Blade shape: a tapered green stroke with transparent space around it
+    function makeBladeTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 64, 0, 0);
+      gradient.addColorStop(0, '#2f6b22');
+      gradient.addColorStop(1, '#9be05a');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.moveTo(1, 64);
+      ctx.lineTo(15, 64);
+      ctx.lineTo(8, 0);
+      ctx.closePath();
+      ctx.fill();
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    const bladeGeometry = new THREE.PlaneGeometry(0.14, 1);
+    bladeGeometry.translate(0, 0.5, 0);   // base at y = 0, tip at y = 1
+
+    const grassMaterial = new THREE.MeshLambertMaterial({
+      map: makeBladeTexture(),
+      alphaTest: 0.5,
+      side: THREE.DoubleSide
+    });
+
+    // The wind sway runs on the GPU, so the CPU does no per-frame work
+    grassMaterial.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = grassTime;
+      shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        float bend = position.y * position.y;   // only the tips move
+        float wave = sin(uTime * 2.2 + instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 1.1)
+                   + 0.5 * sin(uTime * 4.3 + instanceMatrix[3].z * 2.3);
+        transformed.x += wave * 0.2 * bend;
+        transformed.z += wave * 0.08 * bend;`
+      );
+    };
+
+    const grass = new THREE.InstancedMesh(bladeGeometry, grassMaterial, MAX_BLADES);
+    grass.frustumCulled = false;
+    scene.add(grass);
+
+    // Deterministic "random" so blades stay put when neighbouring blocks change
+    function rnd(a, b, c, d) {
+      const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7 + d * 19.19) * 43758.5453;
+      return s - Math.floor(s);
+    }
+
+    const _pos = new THREE.Vector3();
+    const _quat = new THREE.Quaternion();
+    const _scale = new THREE.Vector3();
+    const _matrix = new THREE.Matrix4();
+    const _tint = new THREE.Color();
+    const UP = new THREE.Vector3(0, 1, 0);
+
+    // Only runs when you break or place a block, not every frame
+    function rebuildGrass() {
+      let n = 0;
+      for (const mesh of world.values()) {
+        const { x, y, z } = mesh.position;
+        if (mesh.userData.type !== 'grass' || world.has(key(x, y + 1, z))) continue;
+        for (let b = 0; b < BLADES_PER_CELL && n < MAX_BLADES; b++, n++) {
+          _pos.set(x + (rnd(x, z, b, 0) - 0.5) * 0.95, y + 0.5, z + (rnd(x, z, b, 1) - 0.5) * 0.95);
+          _quat.setFromAxisAngle(UP, rnd(x, z, b, 2) * Math.PI * 2);
+          _scale.set(1, 0.35 + rnd(x, z, b, 3) * 0.45, 1);
+          grass.setMatrixAt(n, _matrix.compose(_pos, _quat, _scale));
+          _tint.setRGB(
+            0.75 + rnd(x, z, b, 4) * 0.25,
+            0.85 + rnd(x, z, b, 5) * 0.15,
+            0.75 + rnd(x, z, b, 6) * 0.25
+          );
+          grass.setColorAt(n, _tint);
+        }
+      }
+      grass.count = n;
+      grass.instanceMatrix.needsUpdate = true;
+      if (grass.instanceColor) grass.instanceColor.needsUpdate = true;
+    }
+
+    rebuildGrass();
+
+    // ---------- Player and collision ----------
+    const keys = {};
+    const player = { pos: new THREE.Vector3(0, 0.5, 0), vy: 0, grounded: true };
+    const SPAWN = new THREE.Vector3(0, 0.5, 0);   // Ursina's default player position
+    let yaw = Math.PI;   // start facing +z, like Ursina's default
+    let pitch = 0;
+
+    const lo = (a) => Math.floor(a + 0.5);     // first cell that contains point a
+    const hi = (b) => Math.ceil(b + 0.5) - 1;  // last cell that contains point b
+
+    // Does the player's box at feet position (x, y, z) overlap any block?
+    function hits(x, y, z) {
+      for (let i = lo(x - HALF); i <= hi(x + HALF); i++) {
+        for (let j = lo(y); j <= hi(y + HEIGHT); j++) {
+          for (let k = lo(z - HALF); k <= hi(z + HALF); k++) {
+            if (world.has(key(i, j, k))) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function update(dt) {
+      const p = player.pos;
+
+      // Arrow keys look around (backup for when the mouse can't)
+      if (keys.ArrowLeft) yaw += TURN * dt;
+      if (keys.ArrowRight) yaw -= TURN * dt;
+      if (keys.ArrowUp) pitch = Math.min(1.5, pitch + TURN * dt);
+      if (keys.ArrowDown) pitch = Math.max(-1.5, pitch - TURN * dt);
+
+      // Movement relative to the direction the camera faces
+      let mx = 0;
+      let mz = 0;
+      if (keys.KeyW) mz += 1;
+      if (keys.KeyS) mz -= 1;
+      if (keys.KeyD) mx += 1;
+      if (keys.KeyA) mx -= 1;
+      const len = Math.hypot(mx, mz) || 1;
+      const s = (SPEED * dt) / len;
+      const dx = (-Math.sin(yaw) * mz + Math.cos(yaw) * mx) * s;
+      const dz = (-Math.cos(yaw) * mz - Math.sin(yaw) * mx) * s;
+
+      if (!hits(p.x + dx, p.y, p.z)) p.x += dx;
+      if (!hits(p.x, p.y, p.z + dz)) p.z += dz;
+
+      // Jump with Space
+      if (keys.Space && player.grounded) player.vy = JUMP_SPEED;
+
+      // Gravity: land on top of blocks, or bump the head on a ceiling
+      player.vy -= GRAVITY * dt;
+      const ny = p.y + player.vy * dt;
+      if (!hits(p.x, ny, p.z)) {
+        p.y = ny;
+      } else if (player.vy < 0) {
+        p.y = lo(ny) + 0.5;
+        player.vy = 0;
+      } else {
+        p.y = hi(ny + HEIGHT) - 0.5 - HEIGHT;
+        player.vy = 0;
+      }
+      player.grounded = player.vy <= 0 && hits(p.x, p.y - 0.02, p.z);
+
+      // Fell off the world: back to the spawn point
+      if (p.y < -20) {
+        p.copy(SPAWN);
+        player.vy = 0;
+      }
+
+      // Camera
+      camera.position.set(p.x, p.y + EYE, p.z);
+      camera.rotation.set(pitch, yaw, 0, 'YXZ');
+      sky.position.copy(camera.position);
+    }
+
+    // ---------- Aiming, breaking and placing ----------
+    // Walk along the view ray and find the first block, plus the empty cell just before it.
+    function aim() {
+      const dx = -Math.sin(yaw) * Math.cos(pitch);
+      const dy = Math.sin(pitch);
+      const dz = -Math.cos(yaw) * Math.cos(pitch);
+      const o = camera.position;
+      let prev = null;
+      for (let t = 0; t <= REACH; t += 0.02) {
+        const cell = [Math.round(o.x + dx * t), Math.round(o.y + dy * t), Math.round(o.z + dz * t)];
+        if (world.has(key(...cell))) return { hit: cell, place: prev };
+        prev = cell;
+      }
+      return { hit: null, place: null };
+    }
+
+    // Would a block at this cell trap the player inside itself?
+    function overlapsPlayer(x, y, z) {
+      const p = player.pos;
+      return Math.abs(x - p.x) < HALF + 0.5 &&
+             Math.abs(z - p.z) < HALF + 0.5 &&
+             y + 0.5 > p.y && y - 0.5 < p.y + HEIGHT;
+    }
+
+    // button 0 = break (adds the block to your inventory), button 2 = place the selected block
+    function act(button) {
+      const target = aim();
+      if (button === 0 && target.hit) {
+        const type = removeBlock(...target.hit);
+        if (type) inventory[type]++;
+      } else if (button === 2 && target.place) {
+        const item = ITEMS[selected];
+        const [x, y, z] = target.place;
+        if (inventory[item] > 0 && !overlapsPlayer(x, y, z)) {
+          setBlock(x, y, z, item);
+          inventory[item]--;
+        }
+      }
+      rebuildGrass();
+      renderHUD();
+    }
+
+    // ---------- Hotbar and inventory ----------
+    const hotbarEl = document.getElementById('hotbar');
+    const gridEl = document.getElementById('grid');
+    const inventoryEl = document.getElementById('inventory');
+
+    function renderHUD() {
+      const slots = ITEMS.map((name, i) => `
+        <div class="slot${i === selected ? ' selected' : ''}">
+          <span class="num">${i + 1}</span>
+          <div class="swatch" style="background: rgb(${TYPES[name].join(',')})"></div>
+          <span class="count">${inventory[name]}</span>
+        </div>`).join('');
+      hotbarEl.innerHTML = slots;
+      gridEl.innerHTML = slots;
+    }
+
+    function select(index) {
+      selected = (index + ITEMS.length) % ITEMS.length;
+      renderHUD();
+    }
+
+    // ---------- Controls ----------
+    const canvas = renderer.domElement;
+    const overlay = document.getElementById('start');
+    const toast = document.getElementById('toast');
+    let locked = false;
+    let press = null;   // used when mouse lock is unavailable: drag to look, click to act
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.remove('hidden');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function look(dx, dy) {
+      yaw -= dx * 0.002;
+      pitch = Math.max(-1.5, Math.min(1.5, pitch - dy * 0.002));
+    }
+
+    overlay.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      canvas.requestPointerLock();
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      locked = document.pointerLockElement === canvas;
+      if (!locked) overlay.classList.remove('hidden');   // Esc brings the start screen back
+    });
+
+    // Some browsers and previews block mouse lock. Fall back to dragging to look.
+    document.addEventListener('pointerlockerror', () => {
+      showToast('Mouse lock is blocked here. Use the arrow keys to look, or drag with the mouse.');
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (locked) {
+        act(e.button);
+        return;
+      }
+      press = { button: e.button, x: e.clientX, y: e.clientY, moved: false };
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (locked) {
+        look(e.movementX, e.movementY);
+      } else if (press) {
+        look(e.movementX, e.movementY);
+        if (Math.abs(e.clientX - press.x) + Math.abs(e.clientY - press.y) > 4) press.moved = true;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (press && !press.moved) act(press.button);
+      press = null;
+    });
+
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    window.addEventListener('wheel', (e) => {
+      select(selected + (e.deltaY > 0 ? 1 : -1));
+    });
+
+    document.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+      if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+      if (e.code === 'KeyE' && !e.repeat) inventoryEl.classList.toggle('hidden');
+      if (/^Digit[1-4]$/.test(e.code)) select(Number(e.code.slice(5)) - 1);
+    });
+
+    document.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    window.addEventListener('blur', () => {
+      for (const k in keys) keys[k] = false;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // ---------- Render loop ----------
+    let lastTime = performance.now();
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = Math.min((now - lastTime) / 1000, 0.05);  // ignore long pauses
+      lastTime = now;
+      grassTime.value = now / 1000;
+      update(dt);
+
+      const target = aim();
+      outline.visible = !!target.hit;
+      if (target.hit) outline.position.set(...target.hit);
+
+      renderer.render(scene, camera);
+    }
+
+    renderHUD();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
